@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galerie – Bilder hinzufügen</title>
+<style>
+  :root { --bg:#1e1c1a; --card:#2a2724; --ink:#f2eee6; --muted:#a39b8f; --accent:#c9b79c; --warn:#e0a46a; --line:#3a3632; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:980px; margin:0 auto; padding:28px 16px 60px; }
+  h1 { font-family:Georgia,serif; font-style:italic; font-weight:400; font-size:30px; margin:0 0 4px; }
+  p.lead { color:var(--muted); margin:0 0 22px; }
+  .drop { border:1.5px dashed var(--accent); border-radius:14px; padding:34px 16px; text-align:center; background:var(--card); cursor:pointer; transition:background .2s; }
+  .drop.over { background:#35312c; }
+  .drop strong { display:block; font-size:19px; margin-bottom:4px; }
+  .drop span { color:var(--muted); font-size:14px; }
+  .btn { display:inline-block; margin-top:14px; background:var(--accent); color:#1e1c1a; border:0; border-radius:999px; padding:11px 22px; font-size:16px; font-weight:600; }
+  #status { margin:14px 2px; color:var(--muted); min-height:1.4em; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; margin-top:10px; }
+  .item { background:var(--card); border-radius:10px; overflow:hidden; border:1px solid var(--line); }
+  .item img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; background:#000; }
+  .item.free img { object-fit:contain; }
+  .meta { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; font-size:13px; }
+  .res { color:var(--muted); }
+  .bad { color:var(--warn); }
+  .del { background:none; border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:4px 11px; font-size:13px; cursor:pointer; }
+  .del:hover { border-color:var(--warn); color:var(--warn); }
+  .empty { color:var(--muted); padding:20px 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Galerie</h1>
+  <p class="lead">Bilder für den Fernseher hinzufügen. Sie erscheinen beim nächsten Bildwechsel.</p>
+
+  <label class="drop" id="drop">
+    <strong>Bilder auswählen oder hierher ziehen</strong>
+    <span id="hint">JPG, PNG, WebP oder HEIC (iPhone) · am besten Querformat in 4K</span><br>
+    <span class="btn">Bilder auswählen</span>
+    <input id="file" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple hidden>
+  </label>
+  <div id="status"></div>
+
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+const grid = document.getElementById('grid'), status = document.getElementById('status');
+const drop = document.getElementById('drop'), input = document.getElementById('file');
+
+function fmt(n){ return n.toLocaleString('de-DE'); }
+
+async function refresh(){
+  const list = await (await fetch('/api/list')).json();
+  grid.innerHTML = '';
+  if (!list.length){ grid.innerHTML = '<div class="empty">Noch keine eigenen Bilder.</div>'; return; }
+  for (const it of list){
+    const d = document.createElement('div');
+    d.className = 'item' + (it.crop ? '' : ' free');
+    const res = it.crop ? `16:9-Ausschnitt ${fmt(it.cw)}×${fmt(it.ch)}` : `${fmt(it.w)}×${fmt(it.h)}`;
+    d.innerHTML = `<img loading="lazy" src="/api/thumb?name=${encodeURIComponent(it.name)}">
+      <div class="meta"><span class="${it.ok?'res':'bad'}">${it.ok?res:('Zu klein – mind. '+it.min)}</span>
+      <button class="del">Löschen</button></div>`;
+    d.querySelector('.del').onclick = async () => {
+      if (!confirm('Bild löschen?')) return;
+      await fetch('/api/delete?name=' + encodeURIComponent(it.name), {method:'POST'});
+      refresh();
+    };
+    grid.appendChild(d);
+  }
+}
+
+const isHeic = f => /\.(heic|heif)$/i.test(f.name) || /image\/hei[cf]/i.test(f.type);
+const jpgName = n => n.replace(/\.[^.]+$/, '') + '.jpg';
+let heicLib = null;
+
+function loadHeicLib(){
+  if (!heicLib) heicLib = new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = '/heic2any.min.js'; s.onload = () => ok(window.heic2any); s.onerror = () => fail(new Error('Konverter nicht ladbar'));
+    document.head.appendChild(s);
+  });
+  return heicLib;
+}
+
+// Große Fotos auf ≤ 16 Megapixel begrenzen (Canvas-Grenze in Safari), das reicht für 4K-Zuschnitte.
+function canvasToJpeg(src, w, h){
+  const f = Math.min(1, Math.sqrt(16000000 / (w * h)));
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * f); c.height = Math.round(h * f);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('Umwandlung fehlgeschlagen')), 'image/jpeg', 0.93));
+}
+
+// HEIC → JPEG im Browser: zuerst eingebauter Decoder (Safari), sonst mitgelieferter Konverter.
+async function heicToJpeg(file){
+  try {
+    const bmp = await createImageBitmap(file);
+    const out = await canvasToJpeg(bmp, bmp.width, bmp.height);
+    bmp.close && bmp.close();
+    return out;
+  } catch (e) { /* Browser kann HEIC nicht selbst – weiter mit Konverter */ }
+  const heic2any = await loadHeicLib();
+  let res = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.93 });
+  return Array.isArray(res) ? res[0] : res;
+}
+
+async function upload(files){
+  files = [...files].filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
+  let ok = 0, errors = [];
+  for (let i = 0; i < files.length; i++){
+    let blob = files[i], name = files[i].name;
+    if (isHeic(files[i])) {
+      status.textContent = `Wandle HEIC um … ${i+1} von ${files.length}: ${name}`;
+      try { blob = await heicToJpeg(files[i]); name = jpgName(name); }
+      catch (e) { /* Original hochladen – das Shield versucht es dann selbst */ }
+    }
+    status.textContent = `Lade hoch … ${i+1} von ${files.length}: ${name}`;
+    const fd = new FormData(); fd.append('file', blob, name);
+    try {
+      const r = await fetch('/api/upload', {method:'POST', body:fd});
+      const j = await r.json();
+      if (!r.ok) errors.push(j.error || files[i].name); else ok++;
+    } catch(e){ errors.push(files[i].name + ': ' + e); }
+  }
+  status.textContent = `${ok} Bild${ok===1?'':'er'} hinzugefügt.` + (errors.length ? ' Fehler: ' + errors.join('; ') : '');
+  refresh();
+}
+
+input.onchange = () => { upload(input.files); input.value = ''; };
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => upload(ev.dataTransfer.files));
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'app.galerie.tv'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.galerie.tv'
+        minSdk 26
+        targetSdk 34
+        versionCode 3
+        versionName '1.2'
+    }
+
+    // Eigener Schlüssel optional: app/galerie-release.jks + Passwörter als Umgebungsvariablen.
+    // Ohne Schlüssel wird der Release-Build mit dem Debug-Schlüssel signiert.
+    def keystore = file('galerie-release.jks')
+    signingConfigs {
+        release {
+            if (keystore.exists()) {
+                storeFile keystore
+                storePassword System.getenv('GALERIE_STORE_PASSWORD') ?: ''
+                keyAlias System.getenv('GALERIE_KEY_ALIAS') ?: 'galerie'
+                keyPassword System.getenv('GALERIE_KEY_PASSWORD') ?: ''
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig keystore.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    testOptions { unitTests { includeAndroidResources = true } }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    implementation 'com.google.zxing:core:3.5.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.13'
+    testImplementation 'androidx.test:core:1.5.0'
+}

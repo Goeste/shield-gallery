@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="collection_labels">
+        <item>Europäische Gemälde</item>
+        <item>Museums-Highlights</item>
+        <item>Landschaften</item>
+        <item>Impressionismus</item>
+        <item>Stillleben &amp; Blumen</item>
+        <item>Porträts</item>
+        <item>Asiatische Landschaften</item>
+        <item>Japanische Holzschnitte</item>
+    </string-array>
+    <string-array name="collection_values">
+        <item>european</item>
+        <item>highlights</item>
+        <item>landscape</item>
+        <item>impressionism</item>
+        <item>stilllife</item>
+        <item>portrait</item>
+        <item>asian</item>
+        <item>ukiyoe</item>
+    </string-array>
+    <string-array name="collection_defaults">
+        <item>european</item>
+        <item>landscape</item>
+        <item>impressionism</item>
+    </string-array>
+
+    <string-array name="interval_labels">
+        <item>30 Sekunden</item>
+        <item>1 Minute</item>
+        <item>3 Minuten</item>
+        <item>10 Minuten</item>
+        <item>30 Minuten</item>
+        <item>1 Stunde</item>
+        <item>3 Stunden</item>
+        <item>1 Tag</item>
+    </string-array>
+    <string-array name="interval_values">
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>600</item>
+        <item>1800</item>
+        <item>3600</item>
+        <item>10800</item>
+        <item>86400</item>
+    </string-array>
+
+    <string-array name="matte_labels">
+        <item>Modern (Passepartout mit Schrägschnitt)</item>
+        <item>Schattenbox (Bild schwebt mit Schatten)</item>
+        <item>Flach (schlichter Rand)</item>
+    </string-array>
+    <string-array name="matte_values">
+        <item>modern</item>
+        <item>shadowbox</item>
+        <item>flat</item>
+    </string-array>
+
+    <string-array name="matte_color_labels">
+        <item>Polarweiß</item>
+        <item>Elfenbein</item>
+        <item>Warmgrau</item>
+        <item>Salbei</item>
+        <item>Apricot</item>
+        <item>Taubenblau</item>
+        <item>Anthrazit</item>
+        <item>Schwarz</item>
+        <item>Automatisch (passend zum Bild)</item>
+    </string-array>
+    <string-array name="matte_color_values">
+        <item>#F4F2EE</item>
+        <item>#EDE6D6</item>
+        <item>#B9B3AA</item>
+        <item>#A9B3A0</item>
+        <item>#E3C3A6</item>
+        <item>#8C9BAA</item>
+        <item>#3A3836</item>
+        <item>#111111</item>
+        <item>auto</item>
+    </string-array>
+
+    <string-array name="size_labels">
+        <item>Klein (55 %)</item>
+        <item>Mittel (68 %)</item>
+        <item>Groß (80 %)</item>
+        <item>Sehr groß (90 %)</item>
+    </string-array>
+    <string-array name="size_values">
+        <item>55</item>
+        <item>68</item>
+        <item>80</item>
+        <item>90</item>
+    </string-array>
+
+    <string-array name="brightness_labels">
+        <item>100 %</item>
+        <item>85 %</item>
+        <item>70 %</item>
+        <item>55 %</item>
+        <item>40 %</item>
+    </string-array>
+    <string-array name="brightness_values">
+        <item>100</item>
+        <item>85</item>
+        <item>70</item>
+        <item>55</item>
+        <item>40</item>
+    </string-array>
+    <string-array name="minres_labels">
+        <item>Full HD (1920 × 1080)</item>
+        <item>4K (3840 × 2160)</item>
+        <item>Keine</item>
+    </string-array>
+    <string-array name="minres_values">
+        <item>1080</item>
+        <item>2160</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="weather_labels">
+        <item>Aus</item>
+        <item>Aktuelles Wetter</item>
+        <item>Aktuell + 3-Tage-Vorschau</item>
+    </string-array>
+    <string-array name="weather_values">
+        <item>off</item>
+        <item>now</item>
+        <item>forecast</item>
+    </string-array>
+    <string-array name="mode_labels">
+        <item>Art – Bild im Rahmen-Stil mit Passepartout</item>
+        <item>Wetter – Vollbild mit Uhr und Wetter</item>
+        <item>Galerie – Diashow ohne Effekte</item>
+    </string-array>
+    <string-array name="mode_values">
+        <item>art</item>
+        <item>weather</item>
+        <item>gallery</item>
+    </string-array>
+
+    <string-array name="pos_labels">
+        <item>Unten rechts</item>
+        <item>Unten links</item>
+        <item>Unten mittig</item>
+        <item>Oben rechts</item>
+        <item>Oben links</item>
+        <item>Oben mittig</item>
+    </string-array>
+    <string-array name="pos_values">
+        <item>bottom_right</item>
+        <item>bottom_left</item>
+        <item>bottom_center</item>
+        <item>top_right</item>
+        <item>top_left</item>
+        <item>top_center</item>
+    </string-array>
+</resources>

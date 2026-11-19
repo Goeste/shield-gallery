@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Galerie</string>
+    <string name="settings_title">Galerie – Einstellungen</string>
+    <string name="loading">Kunstwerk wird geladen …</string>
+    <string name="no_art">Keine Bilder gefunden. Prüfe Internet oder Quellen in den Einstellungen.</string>
+</resources>
