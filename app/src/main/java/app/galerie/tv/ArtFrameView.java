@@ -671,8 +671,9 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         java.util.List<Seg> wx = new java.util.ArrayList<>();
         Seg fc = null;
         if (clockOn) {
-            clock.add(new Seg(clockFmt.format(now), clockPaint, 235, -1));
+            // Datum links, Uhrzeit rechts daneben
             clock.add(new Seg(dateFmt.format(now), infoPaint, 190, -1));
+            clock.add(new Seg(clockFmt.format(now), clockPaint, 235, -1));
         }
         if (showWeather) {
             wx.add(new Seg(Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code), infoPaint, 190, weather.code));
