@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Stil" app:iconSpaceReserved="false">
+        <ListPreference
+            app:key="mode"
+            app:defaultValue="art"
+            app:entries="@array/mode_labels"
+            app:entryValues="@array/mode_values"
+            app:iconSpaceReserved="false"
+            app:title="Aktiver Stil"
+            app:useSimpleSummaryProvider="true" />
+        <Preference
+            app:key="menu_art"
+            app:title="Art"
+            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
+            app:iconSpaceReserved="false">
+            <extra android:name="xml" android:value="prefs_art" />
+        </Preference>
+        <Preference
+            app:key="menu_gallery"
+            app:title="Galerie"
+            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
+            app:iconSpaceReserved="false">
+            <extra android:name="xml" android:value="prefs_gallery" />
+        </Preference>
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Für alle Stile" app:iconSpaceReserved="false">
+        <ListPreference
+            app:key="brightness"
+            app:defaultValue="85"
+            app:entries="@array/brightness_labels"
+            app:entryValues="@array/brightness_values"
+            app:iconSpaceReserved="false"
+            app:title="Helligkeit"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:key="overlay_shade"
+            app:defaultValue="full"
+            app:entries="@array/shade_labels"
+            app:entryValues="@array/shade_values"
+            app:iconSpaceReserved="false"
+            app:title="Schattierung hinter Uhr und Wetter"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+</PreferenceScreen>

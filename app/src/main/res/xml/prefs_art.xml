@@ -2,7 +2,28 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Art-Modus" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Art – auf dem Passepartout" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="art_caption"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Titel"
+            app:summary="Titel und Künstler nach jedem Bildwechsel kurz einblenden (OK-Taste zeigt ihn jederzeit)" />
+        <SwitchPreferenceCompat
+            app:key="art_clock"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:title="Uhr"
+            app:summary="Uhrzeit und Datum – Format und Position im Menü „Uhr“" />
+        <SwitchPreferenceCompat
+            app:key="art_weather"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:title="Wetter"
+            app:summary="Ort, Einheit und Position im Menü „Wetter“" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Rahmen" app:iconSpaceReserved="false">
         <ListPreference
             app:key="matte"
             app:defaultValue="modern"
@@ -19,34 +40,11 @@
             app:iconSpaceReserved="false"
             app:title="Farbe des Passepartouts"
             app:useSimpleSummaryProvider="true" />
-        <ListPreference
-            app:key="art_size"
-            app:defaultValue="76"
-            app:entries="@array/size_labels"
-            app:entryValues="@array/size_values"
-            app:iconSpaceReserved="false"
-            app:title="Bildgröße im Passepartout"
-            app:useSimpleSummaryProvider="true" />
         <SwitchPreferenceCompat
             app:key="canvas"
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:title="Leinwand-Effekt"
             app:summary="Feine Struktur und gedämpfte Farben – wirkt wie ein echtes Bild statt eines leuchtenden Bildschirms" />
-    </PreferenceCategory>
-
-    <PreferenceCategory app:title="Auf dem Passepartout" app:iconSpaceReserved="false">
-        <SwitchPreferenceCompat
-            app:key="art_clock"
-            app:defaultValue="false"
-            app:iconSpaceReserved="false"
-            app:title="Uhrzeit und Datum"
-            app:summary="Dezent unter oder über dem Bild" />
-        <SwitchPreferenceCompat
-            app:key="art_weather"
-            app:defaultValue="false"
-            app:iconSpaceReserved="false"
-            app:title="Wetter"
-            app:summary="Ort und Vorschau unter „Uhr &amp; Wetter“" />
     </PreferenceCategory>
 </PreferenceScreen>

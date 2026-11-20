@@ -10,7 +10,7 @@ import android.widget.Toast;
 
 /**
  * Kunstmodus als App: läuft dauerhaft (Bildschirm bleibt an).
- * Fernbedienung: ◀ ▶ Bild wechseln · ▼ Modus (Art/Wetter/Galerie) · OK Bildinfo · ▲ Einstellungen · Zurück beenden.
+ * Fernbedienung: ◀ ▶ Bild wechseln · ▼ Stil (Art/Galerie) · OK Bildinfo · ▲ Einstellungen · Zurück beenden.
  */
 public class ArtModeActivity extends Activity {
     private ArtFrameView view;
@@ -23,7 +23,7 @@ public class ArtModeActivity extends Activity {
         view = new ArtFrameView(this);
         setContentView(view);
         controller = new ArtController(this, view);
-        Toast.makeText(this, "◀ ▶ Bild · ▼ Modus · OK Info · ▲ Einstellungen", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "◀ ▶ Bild · ▼ Stil · OK Info · ▲ Einstellungen", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -40,8 +40,8 @@ public class ArtModeActivity extends Activity {
         super.onPause();
     }
 
-    private static final String[] MODES = {"art", "weather", "gallery"};
-    private static final String[] MODE_NAMES = {"Art", "Wetter", "Galerie"};
+    private static final String[] MODES = {"art", "gallery"};
+    private static final String[] MODE_NAMES = {"Art", "Galerie"};
 
     private void cycleMode() {
         android.content.SharedPreferences p = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
@@ -51,7 +51,7 @@ public class ArtModeActivity extends Activity {
         i = (i + 1) % MODES.length;
         p.edit().putString("mode", MODES[i]).apply();
         controller.reapplyPrefs();
-        Toast.makeText(this, "Modus: " + MODE_NAMES[i], Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Stil: " + MODE_NAMES[i], Toast.LENGTH_SHORT).show();
     }
 
     @Override

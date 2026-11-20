@@ -2,18 +2,28 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Modus" app:iconSpaceReserved="false">
-        <ListPreference
-            app:key="mode"
-            app:defaultValue="art"
-            app:entries="@array/mode_labels"
-            app:entryValues="@array/mode_values"
-            app:iconSpaceReserved="false"
-            app:title="Anzeigemodus"
-            app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
-
     <PreferenceCategory app:title="Einstellungen" app:iconSpaceReserved="false">
+        <Preference
+            app:key="menu_style"
+            app:title="Stil"
+            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
+            app:iconSpaceReserved="false">
+            <extra android:name="xml" android:value="prefs_style" />
+        </Preference>
+        <Preference
+            app:key="menu_weather"
+            app:title="Wetter"
+            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
+            app:iconSpaceReserved="false">
+            <extra android:name="xml" android:value="prefs_weather" />
+        </Preference>
+        <Preference
+            app:key="menu_clock"
+            app:title="Uhr"
+            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
+            app:iconSpaceReserved="false">
+            <extra android:name="xml" android:value="prefs_clock" />
+        </Preference>
         <Preference
             app:key="menu_images"
             app:title="Bilder"
@@ -21,54 +31,14 @@
             app:iconSpaceReserved="false">
             <extra android:name="xml" android:value="prefs_images" />
         </Preference>
-        <Preference
-            app:key="menu_art"
-            app:title="Art-Modus"
-            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
-            app:iconSpaceReserved="false">
-            <extra android:name="xml" android:value="prefs_art" />
-        </Preference>
-        <Preference
-            app:key="menu_weathermode"
-            app:title="Wetter-Modus"
-            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
-            app:iconSpaceReserved="false">
-            <extra android:name="xml" android:value="prefs_weathermode" />
-        </Preference>
-        <Preference
-            app:key="menu_gallery"
-            app:title="Galerie-Modus"
-            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
-            app:iconSpaceReserved="false">
-            <extra android:name="xml" android:value="prefs_gallery" />
-        </Preference>
-        <Preference
-            app:key="menu_clock"
-            app:title="Uhr &amp; Wetter"
-            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
-            app:iconSpaceReserved="false">
-            <extra android:name="xml" android:value="prefs_clock" />
-        </Preference>
-        <Preference
-            app:key="menu_display"
-            app:title="Bildwechsel &amp; Helligkeit"
-            app:fragment="app.galerie.tv.SettingsActivity$Prefs"
-            app:iconSpaceReserved="false">
-            <extra android:name="xml" android:value="prefs_display" />
-        </Preference>
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Schnellzugriff" app:iconSpaceReserved="false">
         <Preference
-            app:key="upload_quick"
-            app:iconSpaceReserved="false"
-            app:title="Bilder vom Handy oder PC hinzufügen"
-            app:summary="QR-Code scannen und Bilder im Browser hochladen" />
-        <Preference
             app:key="preview"
             app:iconSpaceReserved="false"
             app:title="Vorschau starten"
-            app:summary="Jetzt anzeigen · ◀ ▶ Bild wechseln · ▼ Modus wechseln" />
+            app:summary="Jetzt anzeigen · ◀ ▶ Bild wechseln · ▼ Stil wechseln" />
         <Preference
             app:key="set_screensaver"
             app:iconSpaceReserved="false"

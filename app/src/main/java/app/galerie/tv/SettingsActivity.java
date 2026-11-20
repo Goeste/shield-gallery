@@ -105,7 +105,6 @@ public class SettingsActivity extends AppCompatActivity
             }
 
             click("upload", () -> startActivity(new Intent(requireContext(), UploadActivity.class)));
-            click("upload_quick", () -> startActivity(new Intent(requireContext(), UploadActivity.class)));
 
             click("preview", () -> startActivity(new Intent(requireContext(), ArtModeActivity.class)));
             click("set_screensaver", this::openDreamSettings);
@@ -119,12 +118,14 @@ public class SettingsActivity extends AppCompatActivity
             String xml = getArguments() != null ? getArguments().getString("xml") : null;
             if (xml == null) return R.xml.preferences;
             switch (xml) {
-                case "prefs_images": return R.xml.prefs_images;
+                case "prefs_style": return R.xml.prefs_style;
                 case "prefs_art": return R.xml.prefs_art;
                 case "prefs_gallery": return R.xml.prefs_gallery;
-                case "prefs_weathermode": return R.xml.prefs_weathermode;
+                case "prefs_weather": return R.xml.prefs_weather;
                 case "prefs_clock": return R.xml.prefs_clock;
-                case "prefs_display": return R.xml.prefs_display;
+                case "prefs_images": return R.xml.prefs_images;
+                case "prefs_source": return R.xml.prefs_source;
+                case "prefs_format": return R.xml.prefs_format;
                 default: return R.xml.preferences;
             }
         }
@@ -135,10 +136,27 @@ public class SettingsActivity extends AppCompatActivity
             updateMenuSummaries();
         }
 
-        /** Hauptmenü: unter jedem Untermenü kurz anzeigen, was eingestellt ist. */
+        /** Menüs: unter jedem Untermenü kurz anzeigen, was eingestellt ist. */
         private void updateMenuSummaries() {
             android.content.SharedPreferences p = getPreferenceManager().getSharedPreferences();
-            if (p == null || findPreference("menu_art") == null) return;
+            if (p == null) return;
+
+            String mode = p.getString("mode", "art");
+            summary("menu_style", "Aktiv: " + label(p, "mode", "art", R.array.mode_labels, R.array.mode_values)
+                    + " · " + ("gallery".equals(mode) ? clockWeather(p, "gallery_clock", "gallery_weather")
+                            : clockWeather(p, "art_clock", "art_weather")));
+            summary("menu_art", label(p, "matte", "modern", R.array.matte_labels, R.array.matte_values)
+                    + " · " + label(p, "matte_color", "#F4F2EE", R.array.matte_color_labels, R.array.matte_color_values)
+                    + " · " + clockWeather(p, "art_clock", "art_weather"));
+            summary("menu_gallery", (p.getBoolean("gallery_matte", true) ? "Mit schmalem Rand" : "Ohne Rand")
+                    + " · " + clockWeather(p, "gallery_clock", "gallery_weather"));
+
+            String place = p.getString("weather_place", "");
+            summary("menu_weather", (place.isEmpty() ? "Kein Ort eingestellt" : place)
+                    + " · " + ("f".equals(p.getString("weather_unit", "c")) ? "°F" : "°C")
+                    + " · " + label(p, "weather_pos", "bottom_left", R.array.pos_labels, R.array.pos_values));
+            summary("menu_clock", ("12".equals(p.getString("clock_format", "24")) ? "12 Stunden" : "24 Stunden")
+                    + " · " + label(p, "clock_pos", "bottom_right", R.array.pos_labels, R.array.pos_values));
 
             StringBuilder img = new StringBuilder();
             if (p.getBoolean("source_local", true)) img.append("Eigene Bilder");
@@ -148,28 +166,16 @@ public class SettingsActivity extends AppCompatActivity
                 if (n == 0) n = getResources().getStringArray(R.array.collection_defaults).length;
                 img.append("Museum (").append(n).append(n == 1 ? " Sammlung)" : " Sammlungen)");
             }
-            summary("menu_images", img.length() > 0 ? img.toString() : "Keine Bildquelle aktiv");
-
-            summary("menu_art", label(p, "matte", "modern", R.array.matte_labels, R.array.matte_values)
-                    + " · " + label(p, "matte_color", "#F4F2EE", R.array.matte_color_labels, R.array.matte_color_values)
-                    + " · " + label(p, "art_size", "76", R.array.size_labels, R.array.size_values)
-                    + " · " + clockWeather(p, "art_clock", "art_weather", false));
-
-            summary("menu_weathermode", clockWeather(p, "clock", "weather_on", true));
-
-            summary("menu_gallery", (p.getBoolean("gallery_matte", true) ? "Mit schmalem Rand" : "Ohne Rand")
-                    + " · " + clockWeather(p, "gallery_clock", "gallery_weather", false));
-
-            String place = p.getString("weather_place", "");
-            summary("menu_clock", (place.isEmpty() ? "Kein Ort eingestellt" : place)
-                    + " · " + label(p, "overlay_pos", "bottom_split", R.array.pos_labels, R.array.pos_values));
-
-            summary("menu_display", "Wechsel alle " + label(p, "interval", "600", R.array.interval_labels, R.array.interval_values)
-                    + " · Helligkeit " + label(p, "brightness", "85", R.array.brightness_labels, R.array.brightness_values));
+            String src = img.length() > 0 ? img.toString() : "Keine Bildquelle aktiv";
+            summary("menu_source", src);
+            summary("menu_images", src + " · Wechsel alle "
+                    + label(p, "interval", "600", R.array.interval_labels, R.array.interval_values));
+            summary("menu_format", (p.getBoolean("crop169", true) ? "16:9-Zuschnitt" : "Ohne Zuschnitt")
+                    + " · Mindestauflösung " + label(p, "min_res", "1080", R.array.minres_labels, R.array.minres_values));
         }
 
-        private static String clockWeather(android.content.SharedPreferences p, String clockKey, String weatherKey, boolean def) {
-            boolean c = p.getBoolean(clockKey, def), w = p.getBoolean(weatherKey, def);
+        private static String clockWeather(android.content.SharedPreferences p, String clockKey, String weatherKey) {
+            boolean c = p.getBoolean(clockKey, false), w = p.getBoolean(weatherKey, false);
             return c && w ? "Uhr und Wetter" : c ? "Nur Uhr" : w ? "Nur Wetter" : "Ohne Uhr und Wetter";
         }
 
@@ -185,8 +191,11 @@ public class SettingsActivity extends AppCompatActivity
             for (int i = 0; i < values.length && i < labels.length; i++) {
                 if (values[i].equals(v)) {
                     String l = labels[i];
-                    int k = l.indexOf(" (");
-                    return k > 0 ? l.substring(0, k) : l;
+                    for (String cut : new String[]{" (", " – "}) {
+                        int k = l.indexOf(cut);
+                        if (k > 0) l = l.substring(0, k);
+                    }
+                    return l;
                 }
             }
             return v;

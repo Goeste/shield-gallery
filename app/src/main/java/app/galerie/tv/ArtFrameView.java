@@ -65,16 +65,15 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     private WeatherData weather;
 
     // Einstellungen
-    private String mode = "art";          // art | weather | gallery
-    private String overlayPos = "bottom_split";
+    private String mode = "art";          // art | gallery
+    private String clockPos = "bottom_right", weatherPos = "bottom_left";
     private String matteStyle = "modern";
     private String matteColorPref = "#F4F2EE";
     private int sizePct = 76;
     private boolean canvasEffect = true;
     private int brightness = 85;
-    private boolean captionEnabled = true;
-    // Uhr/Datum und Wetter je Modus getrennt schaltbar
-    private boolean weatherClock = true, weatherWeather = true;
+    // Titel, Uhr/Datum und Wetter je Stil getrennt schaltbar
+    private boolean artCaption = true, galleryCaption = true;
     private boolean artClock = false, artWeather = false;
     private boolean galleryClock = false, galleryWeather = false;
     private String overlayShade = "full";  // full = Abdunklung + Schriftschatten, text = nur Schriftschatten, none
@@ -95,7 +94,9 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     private final RectF art = new RectF();
     private final RectF tmp = new RectF();
     private final Random rnd = new Random();
-    private final SimpleDateFormat clockFmt = new SimpleDateFormat("HH:mm", Locale.GERMANY);
+    private static final SimpleDateFormat CLOCK_24 = new SimpleDateFormat("HH:mm", Locale.GERMANY);
+    private static final SimpleDateFormat CLOCK_12 = new SimpleDateFormat("h:mm a", Locale.US);
+    private SimpleDateFormat clockFmt = CLOCK_24;
     private final SimpleDateFormat dateFmt = new SimpleDateFormat("EEEE, d. MMMM", Locale.GERMANY);
 
     private ValueAnimator fadeAnim, captionAnim;
@@ -211,16 +212,17 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     public void applyPrefs(SharedPreferences p) {
         synchronized (lock) {
             mode = p.getString("mode", "art");
-            overlayPos = p.getString("overlay_pos", "bottom_split");
+            clockPos = p.getString("clock_pos", "bottom_right");
+            weatherPos = p.getString("weather_pos", "bottom_left");
+            clockFmt = "12".equals(p.getString("clock_format", "24")) ? CLOCK_12 : CLOCK_24;
             matteStyle = p.getString("matte", "modern");
             if ("none".equals(matteStyle)) matteStyle = "modern";
             matteColorPref = p.getString("matte_color", "#F4F2EE");
             sizePct = parse(p.getString("art_size", "76"), 76);
             canvasEffect = p.getBoolean("canvas", true);
             brightness = parse(p.getString("brightness", "85"), 85);
-            captionEnabled = p.getBoolean("caption", true);
-            weatherClock = p.getBoolean("clock", true);
-            weatherWeather = p.getBoolean("weather_on", true);
+            artCaption = p.getBoolean("art_caption", true);
+            galleryCaption = p.getBoolean("gallery_caption", true);
             artClock = p.getBoolean("art_clock", false);
             artWeather = p.getBoolean("art_weather", false);
             galleryClock = p.getBoolean("gallery_clock", false);
@@ -278,7 +280,9 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             }
         });
         fadeAnim.start();
-        if (captionEnabled) flashCaption(1800);
+        boolean caption;
+        synchronized (lock) { caption = galleryMode() ? galleryCaption : artCaption; }
+        if (caption) flashCaption(1800);
     }
 
     /** Bildinfo kurz einblenden (auch per OK-Taste). */
@@ -437,7 +441,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         grad.setShader(null);
     }
 
-    /** Art = Bild im Rahmen-Stil, Wetter = Vollbild mit Uhr/Wetter, Galerie = Vollbild ohne Effekte. */
+    /** Art = Bild im Rahmen-Stil mit Passepartout, Galerie = Vollbild. */
     private boolean artMode() {
         return "art".equals(mode);
     }
@@ -450,19 +454,29 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         return !artMode();
     }
 
-    private boolean overlayActive() {
-        return showClock() || showWeather();
-    }
-
-    /** Uhrzeit/Datum im aktuellen Modus eingeschaltet? */
+    /** Uhrzeit/Datum im aktuellen Stil eingeschaltet? */
     private boolean showClock() {
-        return artMode() ? artClock : galleryMode() ? galleryClock : "weather".equals(mode) && weatherClock;
+        return artMode() ? artClock : galleryClock;
     }
 
-    /** Wetter im aktuellen Modus eingeschaltet und Daten vorhanden? */
+    /** Wetter im aktuellen Stil eingeschaltet und Daten vorhanden? */
     private boolean showWeather() {
-        boolean on = artMode() ? artWeather : galleryMode() ? galleryWeather : "weather".equals(mode) && weatherWeather;
-        return on && weather != null;
+        return (artMode() ? artWeather : galleryWeather) && weather != null;
+    }
+
+    private static boolean isTop(String pos) {
+        return pos.startsWith("top");
+    }
+
+    /** Horizontale Lage einer Position: -1 links, 0 mittig, 1 rechts. */
+    private static int hOf(String pos) {
+        return pos.endsWith("left") ? -1 : pos.endsWith("center") ? 0 : 1;
+    }
+
+    /** Ist an dieser Seite (oben/unten) und Lage (h, oder -2 = egal) gerade Uhr oder Wetter zu sehen? */
+    private boolean occupied(boolean top, int h) {
+        return (showClock() && isTop(clockPos) == top && (h == -2 || hOf(clockPos) == h))
+                || (showWeather() && isTop(weatherPos) == top && (h == -2 || hOf(weatherPos) == h));
     }
 
     /** Bildtitel: im Vollbild in einer Ecke (nie dort, wo Uhr/Wetter stehen), im Art-Modus mittig unter dem Bild. */
@@ -479,11 +493,16 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         float x, y;
         int color;
         if (overlay) {
-            // Ecke für den Titel: unten links, außer Uhr/Wetter belegen die Ecke
+            // Ecke für den Titel: die erste freie von unten links, unten rechts, oben links, oben rechts.
+            // Ein mittiger Block belegt beide Ecken seiner Seite.
             boolean right = false, top = false;
-            if (overlayActive()) {
-                if ("bottom_left".equals(overlayPos)) right = true;
-                else if ("bottom_center".equals(overlayPos) || split()) top = true;
+            boolean[][] corners = {{false, false}, {false, true}, {true, false}, {true, true}};
+            for (boolean[] k : corners) {
+                if (!occupied(k[0], k[1] ? 1 : -1) && !occupied(k[0], 0)) {
+                    top = k[0];
+                    right = k[1];
+                    break;
+                }
             }
             float m = H * 0.06f;
             float cx = right ? W : 0, cy = top ? 0 : H;
@@ -506,7 +525,10 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             subPaint.setTextAlign(Paint.Align.CENTER);
             x = W / 2f;
             color = s.text;
-            if (overlayActive() && !overlayPos.startsWith("top")) {
+            // Titel unter dem Bild – außer Uhr/Wetter stehen dort (und oben ist frei oder zumindest die Mitte)
+            boolean below = occupied(false, -2);
+            boolean above = occupied(true, -2);
+            if (below && (!above || !occupied(true, 0))) {
                 // Uhr/Wetter belegen den Streifen unter dem Bild: Titel darüber setzen
                 float space = art.top;
                 float blockH = titlePaint.getTextSize() + subPaint.getTextSize() * 1.6f;
@@ -529,26 +551,24 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     }
 
     /**
-     * Uhr + Wetter (nur im Wetter-Modus). Position: oben/unten × links/mittig/rechts.
-     * Zeilen von oben nach unten: Uhrzeit, Datum, aktuelles Wetter, Ort, 3-Tage-Vorschau.
+     * Uhr + Wetter. Im Galerie-Stil als Block in einer Ecke bzw. oben/unten mittig, Uhr und Wetter je mit eigener
+     * Position; an derselben Position untereinander. Im Art-Stil als Zeile auf dem Passepartout.
      */
     private void drawOverlay(Canvas c, Scene s, int W, int H) {
         if (artMode()) {
             if (s != null) drawArtOverlay(c, s, W, H);
             return;
         }
-        boolean clockOn = showClock(), showWeather = showWeather();
-        if (!clockOn && !showWeather) return;
-        if (split()) {
-            if (showWeather) drawOverlayBlock(c, W, H, false, -1, false, true);
-            if (clockOn) drawOverlayBlock(c, W, H, false, 1, true, false);
+        boolean clockOn = showClock(), weatherOn = showWeather();
+        if (clockOn && weatherOn && clockPos.equals(weatherPos)) {
+            drawOverlayBlock(c, W, H, isTop(clockPos), hOf(clockPos), true, true);
             return;
         }
-        drawOverlayBlock(c, W, H, overlayPos.startsWith("top"),
-                overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1, clockOn, showWeather);
+        if (weatherOn) drawOverlayBlock(c, W, H, isTop(weatherPos), hOf(weatherPos), false, true);
+        if (clockOn) drawOverlayBlock(c, W, H, isTop(clockPos), hOf(clockPos), true, false);
     }
 
-    /** Ein Uhr/Wetter-Block im Wetter-Modus an Position top/h (-1 links, 0 mittig, 1 rechts). */
+    /** Ein Uhr/Wetter-Block im Vollbild an Position top/h (-1 links, 0 mittig, 1 rechts). */
     private void drawOverlayBlock(Canvas c, int W, int H, boolean top, int h, boolean withClock, boolean withWeather) {
         boolean forecast = withWeather && "forecast".equals(weatherMode) && weather.days.size() > 1;
 
@@ -640,16 +660,22 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     }
 
     /**
-     * Uhr + Wetter im Art-Modus: ruhige Zeile(n) auf dem Passepartout, wie ein Museumsschild,
-     * im Streifen über oder unter dem Bild, bündig zur Bildkante. Bei "bottom_split" steht das Wetter
-     * links und Uhrzeit/Datum rechts. Farbe passend zum Passepartout, keine Abdunklung.
+     * Uhr + Wetter im Art-Stil: ruhige Zeile(n) auf dem Passepartout, wie ein Museumsschild,
+     * im Streifen über oder unter dem Bild, bündig zur Bildkante (links/rechts) oder mittig.
+     * Uhr und Wetter haben je eine eigene Position; an derselben Position stehen sie nebeneinander
+     * (Datum · Uhrzeit · Wetter). Farbe passend zum Passepartout, keine Abdunklung.
      */
     private void drawArtOverlay(Canvas c, Scene s, int W, int H) {
-        boolean clockOn = showClock(), showWeather = showWeather();
-        if (!clockOn && !showWeather) return;
-        boolean split = split();
-        boolean top = overlayPos.startsWith("top");
-        int h = split ? 0 : overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
+        boolean clockOn = showClock(), weatherOn = showWeather();
+        if (!clockOn && !weatherOn) return;
+        for (boolean top : new boolean[]{true, false}) {
+            boolean clockHere = clockOn && isTop(clockPos) == top;
+            boolean weatherHere = weatherOn && isTop(weatherPos) == top;
+            if (clockHere || weatherHere) drawArtStrip(c, s, W, H, top, clockHere, weatherHere);
+        }
+    }
+
+    private void drawArtStrip(Canvas c, Scene s, int W, int H, boolean top, boolean clockOn, boolean weatherOn) {
         float strip = top ? art.top : H - art.bottom;
         float size = Math.min(H * 0.026f, strip * 0.34f);
         if (size < H * 0.012f) return;   // kein Platz (sehr großes Bild)
@@ -675,7 +701,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             clock.add(new Seg(dateFmt.format(now), infoPaint, 190, -1));
             clock.add(new Seg(clockFmt.format(now), clockPaint, 235, -1));
         }
-        if (showWeather) {
+        if (weatherOn) {
             wx.add(new Seg(Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code), infoPaint, 190, weather.code));
             if ("forecast".equals(weatherMode)) {
                 StringBuilder b = new StringBuilder();
@@ -689,20 +715,25 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             }
         }
         float baseline = (top ? art.top / 2f : art.bottom + strip / 2f) + size * 0.36f;
-        float gap = size * 2.5f;   // Mindestabstand zwischen linker und rechter Gruppe
+        float gap = size * 2.5f;   // Mindestabstand zwischen zwei Gruppen
 
-        if (split) {
+        if (clockOn && weatherOn && hOf(clockPos) != hOf(weatherPos)) {
+            // Zwei Gruppen in einer Zeile, z. B. Wetter links und Uhr rechts
             if (fc != null && segsWidth(wx, size) + segsWidth(clock, size) + gap > art.width()) wx.remove(fc);
-            drawSegs(c, wx, art.left, baseline, size);
-            drawSegs(c, clock, art.right - segsWidth(clock, size), baseline, size);
+            drawSegs(c, wx, artGroupX(hOf(weatherPos), segsWidth(wx, size)), baseline, size);
+            drawSegs(c, clock, artGroupX(hOf(clockPos), segsWidth(clock, size)), baseline, size);
             return;
         }
         java.util.List<Seg> all = new java.util.ArrayList<>(clock);
         all.addAll(wx);
         if (fc != null && segsWidth(all, size) > art.width()) all.remove(fc);
-        float total = segsWidth(all, size);
-        float x = h < 0 ? art.left : h > 0 ? art.right - total : W / 2f - total / 2f;
-        drawSegs(c, all, x, baseline, size);
+        int h = hOf(clockOn ? clockPos : weatherPos);
+        drawSegs(c, all, artGroupX(h, segsWidth(all, size)), baseline, size);
+    }
+
+    /** Linker Startpunkt einer Gruppe der Breite w im Art-Stil: bündig zur Bildkante oder mittig. */
+    private float artGroupX(int h, float w) {
+        return h < 0 ? art.left : h > 0 ? art.right - w : art.centerX() - w / 2f;
     }
 
     /** Ein Textstück der Art-Modus-Zeile, optional mit Wettersymbol davor. */
@@ -744,11 +775,6 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             c.drawText(g.text, x, baseline, g.paint);
             x += g.paint.measureText(g.text);
         }
-    }
-
-    /** Geteilte Position: Wetter unten links, Uhrzeit und Datum unten rechts. */
-    private boolean split() {
-        return "bottom_split".equals(overlayPos);
     }
 
     /** Linker Startpunkt eines Elements der Breite w bei Ausrichtung h (-1 links, 0 mittig, 1 rechts). */

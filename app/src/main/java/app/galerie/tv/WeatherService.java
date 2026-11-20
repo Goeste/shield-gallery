@@ -56,7 +56,8 @@ final class WeatherService {
         try {
             String url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
                     + "&current=temperature_2m,weather_code,is_day"
-                    + "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4";
+                    + "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4"
+                    + ("f".equals(p.getString("weather_unit", "c")) ? "&temperature_unit=fahrenheit" : "");
             JSONObject o = new JSONObject(Net.getString(url));
             JSONObject cur = o.getJSONObject("current");
             WeatherData w = new WeatherData();

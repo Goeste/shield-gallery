@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Wetter" app:iconSpaceReserved="false">
+        <EditTextPreference
+            app:key="weather_city"
+            app:defaultValue=""
+            app:iconSpaceReserved="false"
+            app:title="Ort"
+            app:dialogMessage="Stadt oder Ort, z. B. Hamburg" />
+        <ListPreference
+            app:key="weather_unit"
+            app:defaultValue="c"
+            app:entries="@array/unit_labels"
+            app:entryValues="@array/unit_values"
+            app:iconSpaceReserved="false"
+            app:title="Einheit"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:key="weather"
+            app:defaultValue="now"
+            app:entries="@array/weather_labels"
+            app:entryValues="@array/weather_values"
+            app:iconSpaceReserved="false"
+            app:title="Anzeige"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:key="weather_pos"
+            app:defaultValue="bottom_left"
+            app:entries="@array/pos_labels"
+            app:entryValues="@array/pos_values"
+            app:iconSpaceReserved="false"
+            app:title="Position"
+            app:useSimpleSummaryProvider="true" />
+        <Preference
+            app:key="weather_note"
+            app:selectable="false"
+            app:iconSpaceReserved="false"
+            app:summary="Ob das Wetter angezeigt wird, stellst du je Stil unter „Stil“ ein." />
+    </PreferenceCategory>
+</PreferenceScreen>

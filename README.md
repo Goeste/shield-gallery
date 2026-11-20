@@ -17,13 +17,13 @@ Papierstruktur, weiches Raumlicht, sanfte Überblendungen.
 
 ## Modi
 - **Art**: Bild im Rahmen-Stil mit Passepartout, Leinwand-Effekt; auf Wunsch mit Uhr und Wetter als dezente Zeile auf dem Passepartout
-- **Wetter**: Vollbild 16:9 mit Uhr, Datum und Wetter; Position wählbar (oben/unten × links/mittig/rechts oder Wetter unten links + Uhr unten rechts)
-- **Galerie**: Diashow im Vollbild ohne Effekte, wahlweise mit sehr schmalem Passepartout am Rand (der Fernseher wirkt wie der Rahmen) und Uhr/Wetter
+- **Galerie**: Diashow im Vollbild ohne Effekte, wahlweise mit sehr schmalem Passepartout am Rand (der Fernseher wirkt wie der Rahmen) und Uhr/Wetter über dem Bild
 
 ## Bedienung
-- App „Galerie“ starten = Kunstmodus dauerhaft (◀ ▶ Bild wechseln, ▼ Modus wechseln, OK Info, ▲ Einstellungen)
-- Einstellungen mit Untermenüs: Bilder, Art-Modus, Wetter-Modus, Galerie-Modus, Uhr & Wetter, Bildwechsel & Helligkeit.
-  Uhrzeit/Datum und Wetter lassen sich je Modus getrennt ein- und ausschalten.
+- App „Galerie“ starten = Kunstmodus dauerhaft (◀ ▶ Bild wechseln, ▼ Stil wechseln, OK Info, ▲ Einstellungen)
+- Einstellungen: **Stil** (aktiver Stil; Art und Galerie mit Titel, Uhr, Wetter; Helligkeit), **Wetter** (Ort, °C/°F,
+  Anzeige, Position), **Uhr** (24 h/12 h, Position), **Bilder** (Größe, Quelle, Hochladen, Bildwechsel, Format).
+  Titel, Uhr und Wetter lassen sich je Stil getrennt ein- und ausschalten; Uhr und Wetter haben je eine eigene Position.
 
 ## Eigene Bilder
 - Einstellungen → „Bilder vom Handy oder PC hinzufügen“ → QR-Code scannen → Bilder im Browser hochladen

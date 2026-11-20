@@ -2,27 +2,33 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Galerie-Modus" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Galerie – über dem Bild" app:iconSpaceReserved="false">
         <SwitchPreferenceCompat
-            app:key="gallery_matte"
+            app:key="gallery_caption"
             app:defaultValue="true"
             app:iconSpaceReserved="false"
-            app:title="Schmales Passepartout am Rand"
-            app:summary="Ein sehr schmaler Rand rundum – der Fernseher wirkt wie der Bilderrahmen. Farbe wie im Art-Modus." />
-    </PreferenceCategory>
-
-    <PreferenceCategory app:title="Über dem Bild" app:iconSpaceReserved="false">
+            app:title="Titel"
+            app:summary="Titel und Künstler nach jedem Bildwechsel kurz einblenden (OK-Taste zeigt ihn jederzeit)" />
         <SwitchPreferenceCompat
             app:key="gallery_clock"
             app:defaultValue="false"
             app:iconSpaceReserved="false"
-            app:title="Uhrzeit und Datum"
-            app:summary="Wie im Wetter-Modus" />
+            app:title="Uhr"
+            app:summary="Uhrzeit und Datum – Format und Position im Menü „Uhr“" />
         <SwitchPreferenceCompat
             app:key="gallery_weather"
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:title="Wetter"
-            app:summary="Ort und Vorschau unter „Uhr &amp; Wetter“" />
+            app:summary="Ort, Einheit und Position im Menü „Wetter“" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Rand" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="gallery_matte"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Schmales Passepartout am Rand"
+            app:summary="Ein sehr schmaler Rand rundum – der Fernseher wirkt wie der Bilderrahmen. Farbe wie im Art-Stil." />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -41,31 +41,41 @@ public class RenderPreviewTest {
         String vg = "vangogh.jpg", an = "andes.jpg";
         String vgT = "Wheat Field with Cypresses", vgA = "Vincent van Gogh", vgD = "1889";
         String anT = "Heart of the Andes", anA = "Frederic Edwin Church", anD = "1859";
-        render("01_art", "art", "bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
-        render("02_wetter_unten_rechts", "weather", "bottom_right", "forecast", false, an, anT, anA, anD, w, 1920, 1080);
-        render("03_wetter_oben_links", "weather", "top_left", "now", false, vg, vgT, vgA, vgD, w, 1920, 1080);
-        render("04_wetter_unten_mittig", "weather", "bottom_center", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
-        render("06_art_geteilt", "art+", "bottom_split", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        // pos: "Wetter|Uhr" oder eine Position für beide; Modus-Suffix + = Uhr und Wetter, ~ = nur Wetter, - = ohne Rand
+        render("01_art", "art", "bottom_left|bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("02_galerie_unten_rechts", "gallery+-", "bottom_right", "forecast", false, an, anT, anA, anD, w, 1920, 1080);
+        render("03_galerie_oben_links_12h", "gallery+-", "top_left", "now", false, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("04_galerie_unten_mittig", "gallery+-", "bottom_center", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
+        render("05_galerie", "gallery", "bottom_left|bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("06_art_geteilt", "art+", "bottom_left|bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
         render("07_art_uhr_wetter_oben_links_4k", "art+", "top_left", "forecast", true, an, anT, anA, anD, w, 3840, 2160);
-        render("08_wetter_geteilt", "weather", "bottom_split", "forecast", true, vg, vgT, vgA, vgD, w, 1920, 1080);
-        render("09_galerie_uhr_wetter", "gallery+", "bottom_split", "now", true, an, anT, anA, anD, w, 1920, 1080);
-        render("10_art_nur_wetter", "art~", "bottom_split", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
-        render("11_galerie_ohne_schattierung", "gallery+", "bottom_split", "now", false, an, anT, anA, anD, w, 1920, 1080);
-        render("05_galerie", "gallery", "bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("08_galerie_wetter_oben_rechts_uhr_unten_links", "gallery+", "top_right|bottom_left", "forecast", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("09_galerie_uhr_wetter", "gallery+", "bottom_left|bottom_right", "now", true, an, anT, anA, anD, w, 1920, 1080);
+        render("10_art_nur_wetter", "art~", "bottom_left|bottom_right", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
+        render("11_galerie_ohne_schattierung", "gallery+", "bottom_left|bottom_right", "now", false, an, anT, anA, anD, w, 1920, 1080);
+        render("12_art_wetter_oben_uhr_unten_12h", "art+", "top_right|bottom_center", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
     }
 
     private void render(String name, String mode, String pos, String weatherMode, boolean caption, String sample,
                         String title, String artist, String date, WeatherData weather, int W, int H) throws Exception {
         Context ctx = ApplicationProvider.getApplicationContext();
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
-        boolean artOverlay = mode.endsWith("+");
-        boolean weatherOnly = mode.endsWith("~");   // nur Wetter, ohne Uhr
-        mode = mode.replace("+", "").replace("~", "");
+        boolean artOverlay = mode.contains("+");
+        boolean weatherOnly = mode.contains("~");   // nur Wetter, ohne Uhr
+        boolean noMatte = mode.contains("-");
+        mode = mode.replace("+", "").replace("~", "").replace("-", "");
+        String wPos = pos.contains("|") ? pos.split("\\|")[0] : pos;
+        String cPos = pos.contains("|") ? pos.split("\\|")[1] : pos;
         p.edit().putBoolean("art_clock", artOverlay).putBoolean("art_weather", artOverlay || weatherOnly)
                 .putBoolean("gallery_clock", artOverlay).putBoolean("gallery_weather", artOverlay)
-                .putBoolean("weather_on", true).putString("overlay_shade", name.contains("ohne_schattierung") ? "none" : "full").putBoolean("gallery_matte", true).putString("mode", mode).putString("overlay_pos", pos).putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "76")
-                .putBoolean("canvas", true).putString("brightness", "100").putBoolean("caption", caption)
-                .putBoolean("clock", true).putString("weather", weatherMode).commit();
+                .putString("overlay_shade", name.contains("ohne_schattierung") ? "none" : "full")
+                .putBoolean("gallery_matte", !noMatte).putString("mode", mode)
+                .putString("weather_pos", wPos).putString("clock_pos", cPos)
+                .putString("clock_format", name.contains("12h") ? "12" : "24")
+                .putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "76")
+                .putBoolean("canvas", true).putString("brightness", "100")
+                .putBoolean("art_caption", caption).putBoolean("gallery_caption", caption)
+                .putString("weather", weatherMode).commit();
 
         ArtFrameView v = new ArtFrameView(ctx);
         v.applyPrefs(p);

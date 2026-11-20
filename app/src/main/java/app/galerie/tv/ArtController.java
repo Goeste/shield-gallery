@@ -77,17 +77,13 @@ final class ArtController {
 
     private void maybeStartWeather(SharedPreferences p) {
         if (weatherStarted) return;
-        String mode = p.getString("mode", "art");
-        String key = "art".equals(mode) ? "art_weather" : "gallery".equals(mode) ? "gallery_weather" : "weather_on";
-        if (!p.getBoolean(key, "weather_on".equals(key))) return;
+        String key = "gallery".equals(p.getString("mode", "art")) ? "gallery_weather" : "art_weather";
+        if (!p.getBoolean(key, false)) return;
         weatherStarted = true;
         main.post(weatherTick);
     }
 
-    /**
-     * Version 1.3: Passepartout schmaler. Alte Bildgrößen (55/68/80) auf die neuen Stufen (62/76/84) umstellen,
-     * einmalig, damit die Auswahl in den Einstellungen gültig bleibt.
-     */
+    /** Einstellungen älterer Versionen einmalig auf den aktuellen Stand bringen. */
     static void migratePrefs(SharedPreferences p) {
         // Version 1.5: Uhr/Datum und Wetter je Modus getrennt schaltbar (vorher ein Schalter "art_overlay"/"gallery_overlay"
         // und eine Wetter-Auswahl mit "Aus")
@@ -108,12 +104,30 @@ final class ArtController {
         if (!p.getBoolean("overlay_split_v1", false)) {
             p.edit().putBoolean("overlay_split_v1", true).putString("overlay_pos", "bottom_split").apply();
         }
-        if (p.getBoolean("art_size_v2", false)) return;
-        String old = p.getString("art_size", null);
-        String neu = "55".equals(old) ? "62" : "68".equals(old) ? "76" : "80".equals(old) ? "84" : old;
-        SharedPreferences.Editor e = p.edit().putBoolean("art_size_v2", true);
-        if (neu != null && !neu.equals(old)) e.putString("art_size", neu);
-        e.apply();
+        if (!p.getBoolean("art_size_v2", false)) {
+            String old = p.getString("art_size", null);
+            String neu = "55".equals(old) ? "62" : "68".equals(old) ? "76" : "80".equals(old) ? "84" : old;
+            SharedPreferences.Editor e = p.edit().putBoolean("art_size_v2", true);
+            if (neu != null && !neu.equals(old)) e.putString("art_size", neu);
+            e.apply();
+        }
+        // Version 1.9: Wetter-Stil entfällt (wird zu Galerie mit Uhr/Wetter ohne Rand), Titel je Stil,
+        // getrennte Positionen für Uhr und Wetter
+        if (!p.getBoolean("menu_v2", false)) {
+            boolean caption = p.getBoolean("caption", true);
+            String pos = p.getString("overlay_pos", "bottom_split");
+            boolean split = "bottom_split".equals(pos);
+            SharedPreferences.Editor e = p.edit().putBoolean("menu_v2", true)
+                    .putBoolean("art_caption", caption).putBoolean("gallery_caption", caption)
+                    .putString("weather_pos", split ? "bottom_left" : pos)
+                    .putString("clock_pos", split ? "bottom_right" : pos);
+            if ("weather".equals(p.getString("mode", "art"))) {
+                e.putString("mode", "gallery").putBoolean("gallery_matte", false)
+                        .putBoolean("gallery_clock", p.getBoolean("clock", true))
+                        .putBoolean("gallery_weather", p.getBoolean("weather_on", true));
+            }
+            e.remove("caption").remove("overlay_pos").remove("clock").remove("weather_on").apply();
+        }
     }
 
     /** Einstellungen neu anwenden (z. B. nach Moduswechsel per Fernbedienung), ohne das Bild neu zu laden. */

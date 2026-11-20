@@ -129,12 +129,10 @@
     </string-array>
     <string-array name="mode_labels">
         <item>Art – Bild im Rahmen-Stil mit Passepartout</item>
-        <item>Wetter – Vollbild mit Uhr und Wetter</item>
-        <item>Galerie – Diashow ohne Effekte</item>
+        <item>Galerie – Bild im Vollbild</item>
     </string-array>
     <string-array name="mode_values">
         <item>art</item>
-        <item>weather</item>
         <item>gallery</item>
     </string-array>
 
@@ -150,21 +148,37 @@
     </string-array>
 
     <string-array name="pos_labels">
-        <item>Unten: Wetter links, Uhr rechts</item>
-        <item>Unten rechts</item>
         <item>Unten links</item>
         <item>Unten mittig</item>
-        <item>Oben rechts</item>
+        <item>Unten rechts</item>
         <item>Oben links</item>
         <item>Oben mittig</item>
+        <item>Oben rechts</item>
     </string-array>
     <string-array name="pos_values">
-        <item>bottom_split</item>
-        <item>bottom_right</item>
         <item>bottom_left</item>
         <item>bottom_center</item>
-        <item>top_right</item>
+        <item>bottom_right</item>
         <item>top_left</item>
         <item>top_center</item>
+        <item>top_right</item>
+    </string-array>
+
+    <string-array name="unit_labels">
+        <item>Celsius (°C)</item>
+        <item>Fahrenheit (°F)</item>
+    </string-array>
+    <string-array name="unit_values">
+        <item>c</item>
+        <item>f</item>
+    </string-array>
+
+    <string-array name="clock_format_labels">
+        <item>24 Stunden (15:30)</item>
+        <item>12 Stunden (3:30 PM)</item>
+    </string-array>
+    <string-array name="clock_format_values">
+        <item>24</item>
+        <item>12</item>
     </string-array>
 </resources>
