@@ -43,6 +43,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+            ArtController.migratePrefs(getPreferenceManager().getSharedPreferences());
             setPreferencesFromResource(R.xml.preferences, rootKey);
 
             Preference usb = findPreference("source_usb");

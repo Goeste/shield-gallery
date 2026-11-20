@@ -16,7 +16,7 @@ Papierstruktur, weiches Raumlicht, sanfte Überblendungen.
    `adb shell settings put secure screensaver_components app.galerie.tv/.ArtDreamService`
 
 ## Modi
-- **Art**: Bild im Rahmen-Stil mit Passepartout, Leinwand-Effekt
+- **Art**: Bild im Rahmen-Stil mit Passepartout, Leinwand-Effekt; auf Wunsch mit Uhr und Wetter als dezente Zeile auf dem Passepartout
 - **Wetter**: Vollbild 16:9 mit Uhr, Datum und Wetter; Position wählbar (oben/unten × links/mittig/rechts)
 - **Galerie**: Diashow im Vollbild ohne Effekte
 

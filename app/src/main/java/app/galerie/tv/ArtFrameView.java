@@ -69,11 +69,12 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     private String overlayPos = "bottom_right";
     private String matteStyle = "modern";
     private String matteColorPref = "#F4F2EE";
-    private int sizePct = 68;
+    private int sizePct = 76;
     private boolean canvasEffect = true;
     private int brightness = 85;
     private boolean captionEnabled = true;
     private boolean clockEnabled = true;
+    private boolean artOverlay = false;   // Uhr/Wetter auch im Art-Modus
     private String weatherMode = "now";
 
     private final Paint bmpPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -210,11 +211,12 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             matteStyle = p.getString("matte", "modern");
             if ("none".equals(matteStyle)) matteStyle = "modern";
             matteColorPref = p.getString("matte_color", "#F4F2EE");
-            sizePct = parse(p.getString("art_size", "68"), 68);
+            sizePct = parse(p.getString("art_size", "76"), 76);
             canvasEffect = p.getBoolean("canvas", true);
             brightness = parse(p.getString("brightness", "85"), 85);
             captionEnabled = p.getBoolean("caption", true);
             clockEnabled = p.getBoolean("clock", true);
+            artOverlay = p.getBoolean("art_overlay", false);
             weatherMode = p.getString("weather", "now");
             if (cur != null) cur = new Scene(cur.bmp, cur.item, matteFor(cur.bmp), cur.dx, cur.dy);
         }
@@ -414,7 +416,8 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     }
 
     private boolean overlayActive() {
-        return "weather".equals(mode) && (clockEnabled || (!"off".equals(weatherMode) && weather != null));
+        boolean wanted = "weather".equals(mode) || (artMode() && artOverlay);
+        return wanted && (clockEnabled || (!"off".equals(weatherMode) && weather != null));
     }
 
     /** Bildtitel: im Vollbild in einer Ecke (nie dort, wo Uhr/Wetter stehen), im Art-Modus mittig unter dem Bild. */
@@ -456,11 +459,19 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         } else {
             titlePaint.setTextAlign(Paint.Align.CENTER);
             subPaint.setTextAlign(Paint.Align.CENTER);
-            float space = H - art.bottom;
             x = W / 2f;
-            y = art.bottom + space * 0.5f - titlePaint.getTextSize() * 0.2f;
             color = s.text;
-            if (space < titlePaint.getTextSize() * 3f) y = H - titlePaint.getTextSize() * 1.6f;
+            if (overlayActive() && !overlayPos.startsWith("top")) {
+                // Uhr/Wetter belegen den Streifen unter dem Bild: Titel darüber setzen
+                float space = art.top;
+                float blockH = titlePaint.getTextSize() + subPaint.getTextSize() * 1.6f;
+                y = (space - blockH) / 2f + titlePaint.getTextSize() * 0.85f;
+                if (space < titlePaint.getTextSize() * 3f) y = titlePaint.getTextSize() * 1.2f;
+            } else {
+                float space = H - art.bottom;
+                y = art.bottom + space * 0.5f - titlePaint.getTextSize() * 0.2f;
+                if (space < titlePaint.getTextSize() * 3f) y = H - titlePaint.getTextSize() * 1.6f;
+            }
             titlePaint.clearShadowLayer();
             subPaint.clearShadowLayer();
         }
@@ -477,6 +488,10 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
      * Zeilen von oben nach unten: Uhrzeit, Datum, aktuelles Wetter, Ort, 3-Tage-Vorschau.
      */
     private void drawOverlay(Canvas c, Scene s, int W, int H) {
+        if (artMode()) {
+            if (artOverlay && s != null) drawArtOverlay(c, s, W, H);
+            return;
+        }
         if (!"weather".equals(mode)) return;
         boolean showWeather = !"off".equals(weatherMode) && weather != null;
         if (!clockEnabled && !showWeather) return;
@@ -565,6 +580,98 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
                 c.drawText(Math.round(d.max) + "° / " + Math.round(d.min) + "°", cx, y + 100 * u, infoPaint);
             }
             infoPaint.setTextAlign(Paint.Align.LEFT);
+        }
+    }
+
+    /**
+     * Uhr + Wetter im Art-Modus: eine ruhige Zeile auf dem Passepartout, wie ein Museumsschild,
+     * im Streifen über oder unter dem Bild, bündig zur linken/rechten Bildkante oder mittig.
+     * Farbe passend zum Passepartout, keine Abdunklung.
+     */
+    private void drawArtOverlay(Canvas c, Scene s, int W, int H) {
+        boolean showWeather = !"off".equals(weatherMode) && weather != null;
+        if (!clockEnabled && !showWeather) return;
+        boolean top = overlayPos.startsWith("top");
+        int h = overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
+        float strip = top ? art.top : H - art.bottom;
+        float size = Math.min(H * 0.026f, strip * 0.34f);
+        if (size < H * 0.012f) return;   // kein Platz (sehr großes Bild)
+
+        Date now = new Date();
+        String time = clockEnabled ? clockFmt.format(now) : null;
+        String date = clockEnabled ? dateFmt.format(now) : null;
+        String temp = showWeather ? Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code) : null;
+        StringBuilder fc = new StringBuilder();
+        if (showWeather && "forecast".equals(weatherMode)) {
+            int n = Math.min(3, weather.days.size() - 1);
+            for (int i = 0; i < n; i++) {
+                WeatherData.Day d = weather.days.get(i + 1);
+                if (fc.length() > 0) fc.append("   ");
+                fc.append(d.label).append(' ').append(Math.round(d.max)).append("°/").append(Math.round(d.min)).append('°');
+            }
+        }
+        final String sep = "   ·   ";
+
+        infoPaint.setTextAlign(Paint.Align.LEFT);
+        infoPaint.clearShadowLayer();
+        infoPaint.setColor(s.text);
+        clockPaint.setTextAlign(Paint.Align.LEFT);
+        clockPaint.clearShadowLayer();
+        clockPaint.setColor(s.text);
+        iconPaint.clearShadowLayer();
+        iconPaint.setColor(s.text);
+        infoPaint.setTextSize(size);
+        clockPaint.setTextSize(size * 1.35f);
+        float iconW = size * 1.3f, iconGap = size * 0.45f;
+
+        // Breite messen; Vorschau weglassen, wenn die Zeile breiter als das Bild würde
+        float wTime = time != null ? clockPaint.measureText(time) : 0;
+        float wSep = infoPaint.measureText(sep);
+        float wRest;
+        String fcs = fc.length() > 0 ? fc.toString() : null;
+        while (true) {
+            wRest = 0;
+            int parts = 0;
+            if (date != null) { wRest += infoPaint.measureText(date); parts++; }
+            if (temp != null) { wRest += iconW + iconGap + infoPaint.measureText(temp); parts++; }
+            if (fcs != null) { wRest += infoPaint.measureText(fcs); parts++; }
+            if (time != null && parts > 0) wRest += wSep * parts;
+            else if (parts > 1) wRest += wSep * (parts - 1);
+            if (wTime + wRest <= art.width() || fcs == null) break;
+            fcs = null;
+        }
+        float total = wTime + wRest;
+        float x = h < 0 ? art.left : h > 0 ? art.right - total : W / 2f - total / 2f;
+        float baseline = (top ? art.top / 2f : art.bottom + strip / 2f) + size * 0.36f;
+
+        boolean first = true;
+        if (time != null) {
+            clockPaint.setAlpha(235);
+            c.drawText(time, x, baseline, clockPaint);
+            x += wTime;
+            first = false;
+        }
+        infoPaint.setAlpha(190);
+        if (date != null) {
+            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
+            c.drawText(date, x, baseline, infoPaint);
+            x += infoPaint.measureText(date);
+            first = false;
+        }
+        if (temp != null) {
+            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
+            iconPaint.setStrokeWidth(Math.max(1f, size * 0.085f));
+            iconPaint.setAlpha(200);
+            WeatherIcons.draw(c, iconPaint, weather.code, weather.isDay, x + iconW / 2f, baseline - size * 0.36f, iconW);
+            x += iconW + iconGap;
+            c.drawText(temp, x, baseline, infoPaint);
+            x += infoPaint.measureText(temp);
+            first = false;
+        }
+        if (fcs != null) {
+            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
+            infoPaint.setAlpha(150);
+            c.drawText(fcs, x, baseline, infoPaint);
         }
     }
 

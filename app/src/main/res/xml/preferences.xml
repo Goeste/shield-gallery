@@ -74,7 +74,13 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Wetter-Modus: Uhr &amp; Wetter" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Uhr &amp; Wetter" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="art_overlay"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:title="Auch im Art-Modus anzeigen"
+            app:summary="Dezent auf dem Passepartout über oder unter dem Bild. Im Wetter-Modus immer an." />
         <SwitchPreferenceCompat
             app:key="clock"
             app:defaultValue="true"
@@ -123,7 +129,7 @@
             app:useSimpleSummaryProvider="true" />
         <ListPreference
             app:key="art_size"
-            app:defaultValue="68"
+            app:defaultValue="76"
             app:entries="@array/size_labels"
             app:entryValues="@array/size_values"
             app:iconSpaceReserved="false"

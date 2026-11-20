@@ -51,6 +51,7 @@ final class ArtController {
         if (running) return;
         running = true;
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
+        migratePrefs(p);
         view.applyPrefs(p);
         try {
             intervalMs = Long.parseLong(p.getString("interval", "600")) * 1000L;
@@ -76,9 +77,24 @@ final class ArtController {
 
     private void maybeStartWeather(SharedPreferences p) {
         if (weatherStarted) return;
-        if (!"weather".equals(p.getString("mode", "art")) || "off".equals(p.getString("weather", "now"))) return;
+        String mode = p.getString("mode", "art");
+        boolean overlay = "weather".equals(mode) || ("art".equals(mode) && p.getBoolean("art_overlay", false));
+        if (!overlay || "off".equals(p.getString("weather", "now"))) return;
         weatherStarted = true;
         main.post(weatherTick);
+    }
+
+    /**
+     * Version 1.3: Passepartout schmaler. Alte Bildgrößen (55/68/80) auf die neuen Stufen (62/76/84) umstellen,
+     * einmalig, damit die Auswahl in den Einstellungen gültig bleibt.
+     */
+    static void migratePrefs(SharedPreferences p) {
+        if (p.getBoolean("art_size_v2", false)) return;
+        String old = p.getString("art_size", null);
+        String neu = "55".equals(old) ? "62" : "68".equals(old) ? "76" : "80".equals(old) ? "84" : old;
+        SharedPreferences.Editor e = p.edit().putBoolean("art_size_v2", true);
+        if (neu != null && !neu.equals(old)) e.putString("art_size", neu);
+        e.apply();
     }
 
     /** Einstellungen neu anwenden (z. B. nach Moduswechsel per Fernbedienung), ohne das Bild neu zu laden. */

@@ -82,15 +82,15 @@
     </string-array>
 
     <string-array name="size_labels">
-        <item>Klein (55 %)</item>
-        <item>Mittel (68 %)</item>
-        <item>Groß (80 %)</item>
+        <item>Klein (62 %)</item>
+        <item>Mittel (76 %)</item>
+        <item>Groß (84 %)</item>
         <item>Sehr groß (90 %)</item>
     </string-array>
     <string-array name="size_values">
-        <item>55</item>
-        <item>68</item>
-        <item>80</item>
+        <item>62</item>
+        <item>76</item>
+        <item>84</item>
         <item>90</item>
     </string-array>
 

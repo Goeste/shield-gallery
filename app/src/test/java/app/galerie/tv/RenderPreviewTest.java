@@ -45,6 +45,8 @@ public class RenderPreviewTest {
         render("02_wetter_unten_rechts", "weather", "bottom_right", "forecast", false, an, anT, anA, anD, w, 1920, 1080);
         render("03_wetter_oben_links", "weather", "top_left", "now", false, vg, vgT, vgA, vgD, w, 1920, 1080);
         render("04_wetter_unten_mittig", "weather", "bottom_center", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
+        render("06_art_uhr_wetter_unten_rechts", "art+", "bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("07_art_uhr_wetter_oben_links_4k", "art+", "top_left", "forecast", true, an, anT, anA, anD, w, 3840, 2160);
         render("05_galerie", "gallery", "bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
     }
 
@@ -52,7 +54,9 @@ public class RenderPreviewTest {
                         String title, String artist, String date, WeatherData weather, int W, int H) throws Exception {
         Context ctx = ApplicationProvider.getApplicationContext();
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
-        p.edit().putString("mode", mode).putString("overlay_pos", pos).putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "68")
+        boolean artOverlay = mode.endsWith("+");
+        mode = mode.replace("+", "");
+        p.edit().putBoolean("art_overlay", artOverlay).putString("mode", mode).putString("overlay_pos", pos).putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "76")
                 .putBoolean("canvas", true).putString("brightness", "100").putBoolean("caption", caption)
                 .putBoolean("clock", true).putString("weather", weatherMode).commit();
 
