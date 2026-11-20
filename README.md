@@ -21,8 +21,8 @@ Papierstruktur, weiches Raumlicht, sanfte Überblendungen.
 
 ## Bedienung
 - App „Galerie“ starten = Kunstmodus dauerhaft (◀ ▶ Bild wechseln, ▼ Stil wechseln, OK Info, ▲ Einstellungen)
-- Einstellungen: **Stil** (aktiver Stil; Art und Galerie mit Titel, Uhr, Wetter; Helligkeit), **Wetter** (Ort, °C/°F,
-  Anzeige, Position), **Uhr** (24 h/12 h, Position), **Bilder** (Größe, Quelle, Hochladen, Bildwechsel, Format).
+- Einstellungen: **Stil** (Art und Galerie je mit „Diesen Stil verwenden“, Titel, Uhr, Wetter; Helligkeit), **Wetter** (Ort, °C/°F,
+  Anzeige, Position), **Uhr** (24 h/12 h, Position), **Bilder** (Quelle, Hochladen, Bildwechsel, Format).
   Titel, Uhr und Wetter lassen sich je Stil getrennt ein- und ausschalten; Uhr und Wetter haben je eine eigene Position.
 
 ## Eigene Bilder

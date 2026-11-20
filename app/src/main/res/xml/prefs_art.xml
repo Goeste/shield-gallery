@@ -2,7 +2,11 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Art – auf dem Passepartout" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Art – Bild im Rahmen-Stil mit Passepartout" app:iconSpaceReserved="false">
+        <Preference
+            app:key="use_art"
+            app:iconSpaceReserved="false"
+            app:title="Diesen Stil verwenden" />
         <SwitchPreferenceCompat
             app:key="art_caption"
             app:defaultValue="true"
@@ -23,7 +27,7 @@
             app:summary="Ort, Einheit und Position im Menü „Wetter“" />
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Rahmen" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Rahmen &amp; Größe" app:iconSpaceReserved="false">
         <ListPreference
             app:key="matte"
             app:defaultValue="modern"
@@ -39,6 +43,14 @@
             app:entryValues="@array/matte_color_values"
             app:iconSpaceReserved="false"
             app:title="Farbe des Passepartouts"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:key="art_size"
+            app:defaultValue="76"
+            app:entries="@array/size_labels"
+            app:entryValues="@array/size_values"
+            app:iconSpaceReserved="false"
+            app:title="Bildgröße"
             app:useSimpleSummaryProvider="true" />
         <SwitchPreferenceCompat
             app:key="canvas"

@@ -106,6 +106,8 @@ public class SettingsActivity extends AppCompatActivity
 
             click("upload", () -> startActivity(new Intent(requireContext(), UploadActivity.class)));
 
+            click("use_art", () -> useStyle("art"));
+            click("use_gallery", () -> useStyle("gallery"));
             click("preview", () -> startActivity(new Intent(requireContext(), ArtModeActivity.class)));
             click("set_screensaver", this::openDreamSettings);
             click("clear_cache", () -> {
@@ -130,6 +132,12 @@ public class SettingsActivity extends AppCompatActivity
             }
         }
 
+        private void useStyle(String mode) {
+            getPreferenceManager().getSharedPreferences().edit().putString("mode", mode).apply();
+            Toast.makeText(requireContext(), "Stil: " + ("gallery".equals(mode) ? "Galerie" : "Art"), Toast.LENGTH_SHORT).show();
+            updateMenuSummaries();
+        }
+
         @Override
         public void onResume() {
             super.onResume();
@@ -141,15 +149,19 @@ public class SettingsActivity extends AppCompatActivity
             android.content.SharedPreferences p = getPreferenceManager().getSharedPreferences();
             if (p == null) return;
 
-            String mode = p.getString("mode", "art");
-            summary("menu_style", "Aktiv: " + label(p, "mode", "art", R.array.mode_labels, R.array.mode_values)
-                    + " · " + ("gallery".equals(mode) ? clockWeather(p, "gallery_clock", "gallery_weather")
-                            : clockWeather(p, "art_clock", "art_weather")));
-            summary("menu_art", label(p, "matte", "modern", R.array.matte_labels, R.array.matte_values)
+            boolean gallery = "gallery".equals(p.getString("mode", "art"));
+            String active = "● Wird verwendet · ";
+            summary("menu_style", "Aktiv: " + (gallery ? "Galerie" : "Art") + " · "
+                    + (gallery ? clockWeather(p, "gallery_clock", "gallery_weather") : clockWeather(p, "art_clock", "art_weather")));
+            summary("menu_art", (gallery ? "" : active)
+                    + label(p, "matte", "modern", R.array.matte_labels, R.array.matte_values)
                     + " · " + label(p, "matte_color", "#F4F2EE", R.array.matte_color_labels, R.array.matte_color_values)
                     + " · " + clockWeather(p, "art_clock", "art_weather"));
-            summary("menu_gallery", (p.getBoolean("gallery_matte", true) ? "Mit schmalem Rand" : "Ohne Rand")
+            summary("menu_gallery", (gallery ? active : "")
+                    + (p.getBoolean("gallery_matte", true) ? "Mit schmalem Rand" : "Ohne Rand")
                     + " · " + clockWeather(p, "gallery_clock", "gallery_weather"));
+            summary("use_art", gallery ? "Jetzt zum Art-Stil wechseln" : "● Wird gerade verwendet");
+            summary("use_gallery", gallery ? "● Wird gerade verwendet" : "Jetzt zum Galerie-Stil wechseln");
 
             String place = p.getString("weather_place", "");
             summary("menu_weather", (place.isEmpty() ? "Kein Ort eingestellt" : place)

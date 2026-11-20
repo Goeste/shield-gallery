@@ -2,7 +2,11 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Galerie – über dem Bild" app:iconSpaceReserved="false">
+    <PreferenceCategory app:title="Galerie – Bild im Vollbild" app:iconSpaceReserved="false">
+        <Preference
+            app:key="use_gallery"
+            app:iconSpaceReserved="false"
+            app:title="Diesen Stil verwenden" />
         <SwitchPreferenceCompat
             app:key="gallery_caption"
             app:defaultValue="true"

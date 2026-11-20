@@ -3,14 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="Bilder" app:iconSpaceReserved="false">
-        <ListPreference
-            app:key="art_size"
-            app:defaultValue="76"
-            app:entries="@array/size_labels"
-            app:entryValues="@array/size_values"
-            app:iconSpaceReserved="false"
-            app:title="Größe im Passepartout"
-            app:useSimpleSummaryProvider="true" />
         <Preference
             app:key="menu_source"
             app:title="Quelle"
