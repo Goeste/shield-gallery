@@ -66,7 +66,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
 
     // Einstellungen
     private String mode = "art";          // art | weather | gallery
-    private String overlayPos = "bottom_right";
+    private String overlayPos = "bottom_split";
     private String matteStyle = "modern";
     private String matteColorPref = "#F4F2EE";
     private int sizePct = 76;
@@ -207,7 +207,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     public void applyPrefs(SharedPreferences p) {
         synchronized (lock) {
             mode = p.getString("mode", "art");
-            overlayPos = p.getString("overlay_pos", "bottom_right");
+            overlayPos = p.getString("overlay_pos", "bottom_split");
             matteStyle = p.getString("matte", "modern");
             if ("none".equals(matteStyle)) matteStyle = "modern";
             matteColorPref = p.getString("matte_color", "#F4F2EE");
@@ -438,7 +438,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             boolean right = false, top = false;
             if (overlayActive()) {
                 if ("bottom_left".equals(overlayPos)) right = true;
-                else if ("bottom_center".equals(overlayPos)) top = true;
+                else if ("bottom_center".equals(overlayPos) || split()) top = true;
             }
             float m = H * 0.06f;
             float cx = right ? W : 0, cy = top ? 0 : H;
@@ -495,17 +495,26 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         if (!"weather".equals(mode)) return;
         boolean showWeather = !"off".equals(weatherMode) && weather != null;
         if (!clockEnabled && !showWeather) return;
-        boolean forecast = showWeather && "forecast".equals(weatherMode) && weather.days.size() > 1;
+        if (split()) {
+            if (showWeather) drawOverlayBlock(c, W, H, false, -1, false, true);
+            if (clockEnabled) drawOverlayBlock(c, W, H, false, 1, true, false);
+            return;
+        }
+        drawOverlayBlock(c, W, H, overlayPos.startsWith("top"),
+                overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1, clockEnabled, showWeather);
+    }
+
+    /** Ein Uhr/Wetter-Block im Wetter-Modus an Position top/h (-1 links, 0 mittig, 1 rechts). */
+    private void drawOverlayBlock(Canvas c, int W, int H, boolean top, int h, boolean withClock, boolean withWeather) {
+        boolean forecast = withWeather && "forecast".equals(weatherMode) && weather.days.size() > 1;
 
         float u = H / 1080f;
-        boolean top = overlayPos.startsWith("top");
-        int h = overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
         float margin = 66 * u;
 
         // Höhe des Blocks
         float blockH = 0;
-        if (clockEnabled) blockH += 136 * u;                    // Uhr + Datum
-        if (showWeather) blockH += 76 * u;                      // Wetterzeile + Ort
+        if (withClock) blockH += 136 * u;                    // Uhr + Datum
+        if (withWeather) blockH += 76 * u;                      // Wetterzeile + Ort
         if (forecast) blockH += 104 * u;
         float y = top ? margin : H - margin - blockH;          // Oberkante des Blocks
         float ax = h < 0 ? margin : h > 0 ? W - margin : W / 2f; // Ausrichtungskante
@@ -528,7 +537,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         iconPaint.setColor(color);
         iconPaint.setShadowLayer(sh, 0, u, 0x80000000);
 
-        if (clockEnabled) {
+        if (withClock) {
             Date now = new Date();
             clockPaint.setTextSize(96 * u);
             clockPaint.setAlpha(245);
@@ -543,7 +552,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             y += 136 * u;
         }
 
-        if (showWeather) {
+        if (withWeather) {
             infoPaint.setTextSize(30 * u);
             infoPaint.setAlpha(240);
             String line = Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code);
@@ -584,95 +593,114 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     }
 
     /**
-     * Uhr + Wetter im Art-Modus: eine ruhige Zeile auf dem Passepartout, wie ein Museumsschild,
-     * im Streifen über oder unter dem Bild, bündig zur linken/rechten Bildkante oder mittig.
-     * Farbe passend zum Passepartout, keine Abdunklung.
+     * Uhr + Wetter im Art-Modus: ruhige Zeile(n) auf dem Passepartout, wie ein Museumsschild,
+     * im Streifen über oder unter dem Bild, bündig zur Bildkante. Bei "bottom_split" steht das Wetter
+     * links und Uhrzeit/Datum rechts. Farbe passend zum Passepartout, keine Abdunklung.
      */
     private void drawArtOverlay(Canvas c, Scene s, int W, int H) {
         boolean showWeather = !"off".equals(weatherMode) && weather != null;
         if (!clockEnabled && !showWeather) return;
+        boolean split = split();
         boolean top = overlayPos.startsWith("top");
-        int h = overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
+        int h = split ? 0 : overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
         float strip = top ? art.top : H - art.bottom;
         float size = Math.min(H * 0.026f, strip * 0.34f);
         if (size < H * 0.012f) return;   // kein Platz (sehr großes Bild)
 
-        Date now = new Date();
-        String time = clockEnabled ? clockFmt.format(now) : null;
-        String date = clockEnabled ? dateFmt.format(now) : null;
-        String temp = showWeather ? Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code) : null;
-        StringBuilder fc = new StringBuilder();
-        if (showWeather && "forecast".equals(weatherMode)) {
-            int n = Math.min(3, weather.days.size() - 1);
-            for (int i = 0; i < n; i++) {
-                WeatherData.Day d = weather.days.get(i + 1);
-                if (fc.length() > 0) fc.append("   ");
-                fc.append(d.label).append(' ').append(Math.round(d.max)).append("°/").append(Math.round(d.min)).append('°');
-            }
-        }
-        final String sep = "   ·   ";
-
         infoPaint.setTextAlign(Paint.Align.LEFT);
         infoPaint.clearShadowLayer();
         infoPaint.setColor(s.text);
+        infoPaint.setTextSize(size);
         clockPaint.setTextAlign(Paint.Align.LEFT);
         clockPaint.clearShadowLayer();
         clockPaint.setColor(s.text);
+        clockPaint.setTextSize(size * 1.35f);
         iconPaint.clearShadowLayer();
         iconPaint.setColor(s.text);
-        infoPaint.setTextSize(size);
-        clockPaint.setTextSize(size * 1.35f);
-        float iconW = size * 1.3f, iconGap = size * 0.45f;
+        iconPaint.setStrokeWidth(Math.max(1f, size * 0.085f));
 
-        // Breite messen; Vorschau weglassen, wenn die Zeile breiter als das Bild würde
-        float wTime = time != null ? clockPaint.measureText(time) : 0;
-        float wSep = infoPaint.measureText(sep);
-        float wRest;
-        String fcs = fc.length() > 0 ? fc.toString() : null;
-        while (true) {
-            wRest = 0;
-            int parts = 0;
-            if (date != null) { wRest += infoPaint.measureText(date); parts++; }
-            if (temp != null) { wRest += iconW + iconGap + infoPaint.measureText(temp); parts++; }
-            if (fcs != null) { wRest += infoPaint.measureText(fcs); parts++; }
-            if (time != null && parts > 0) wRest += wSep * parts;
-            else if (parts > 1) wRest += wSep * (parts - 1);
-            if (wTime + wRest <= art.width() || fcs == null) break;
-            fcs = null;
+        Date now = new Date();
+        java.util.List<Seg> clock = new java.util.ArrayList<>();
+        java.util.List<Seg> wx = new java.util.ArrayList<>();
+        Seg fc = null;
+        if (clockEnabled) {
+            clock.add(new Seg(clockFmt.format(now), clockPaint, 235, -1));
+            clock.add(new Seg(dateFmt.format(now), infoPaint, 190, -1));
         }
-        float total = wTime + wRest;
-        float x = h < 0 ? art.left : h > 0 ? art.right - total : W / 2f - total / 2f;
+        if (showWeather) {
+            wx.add(new Seg(Math.round(weather.temp) + "°  " + WeatherIcons.label(weather.code), infoPaint, 190, weather.code));
+            if ("forecast".equals(weatherMode)) {
+                StringBuilder b = new StringBuilder();
+                int n = Math.min(3, weather.days.size() - 1);
+                for (int i = 0; i < n; i++) {
+                    WeatherData.Day d = weather.days.get(i + 1);
+                    if (b.length() > 0) b.append("   ");
+                    b.append(d.label).append(' ').append(Math.round(d.max)).append("°/").append(Math.round(d.min)).append('°');
+                }
+                if (b.length() > 0) { fc = new Seg(b.toString(), infoPaint, 150, -1); wx.add(fc); }
+            }
+        }
         float baseline = (top ? art.top / 2f : art.bottom + strip / 2f) + size * 0.36f;
+        float gap = size * 2.5f;   // Mindestabstand zwischen linker und rechter Gruppe
 
-        boolean first = true;
-        if (time != null) {
-            clockPaint.setAlpha(235);
-            c.drawText(time, x, baseline, clockPaint);
-            x += wTime;
-            first = false;
+        if (split) {
+            if (fc != null && segsWidth(wx, size) + segsWidth(clock, size) + gap > art.width()) wx.remove(fc);
+            drawSegs(c, wx, art.left, baseline, size);
+            drawSegs(c, clock, art.right - segsWidth(clock, size), baseline, size);
+            return;
         }
-        infoPaint.setAlpha(190);
-        if (date != null) {
-            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
-            c.drawText(date, x, baseline, infoPaint);
-            x += infoPaint.measureText(date);
-            first = false;
+        java.util.List<Seg> all = new java.util.ArrayList<>(clock);
+        all.addAll(wx);
+        if (fc != null && segsWidth(all, size) > art.width()) all.remove(fc);
+        float total = segsWidth(all, size);
+        float x = h < 0 ? art.left : h > 0 ? art.right - total : W / 2f - total / 2f;
+        drawSegs(c, all, x, baseline, size);
+    }
+
+    /** Ein Textstück der Art-Modus-Zeile, optional mit Wettersymbol davor. */
+    private static final class Seg {
+        final String text; final TextPaint paint; final int alpha; final int icon;
+        Seg(String text, TextPaint paint, int alpha, int icon) {
+            this.text = text; this.paint = paint; this.alpha = alpha; this.icon = icon;
         }
-        if (temp != null) {
-            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
-            iconPaint.setStrokeWidth(Math.max(1f, size * 0.085f));
-            iconPaint.setAlpha(200);
-            WeatherIcons.draw(c, iconPaint, weather.code, weather.isDay, x + iconW / 2f, baseline - size * 0.36f, iconW);
-            x += iconW + iconGap;
-            c.drawText(temp, x, baseline, infoPaint);
-            x += infoPaint.measureText(temp);
-            first = false;
+    }
+
+    private static final String SEP = "   ·   ";
+
+    private float segsWidth(java.util.List<Seg> segs, float size) {
+        float w = 0;
+        for (int i = 0; i < segs.size(); i++) {
+            Seg g = segs.get(i);
+            if (i > 0) w += infoPaint.measureText(SEP);
+            if (g.icon >= 0) w += size * 1.75f;
+            w += g.paint.measureText(g.text);
         }
-        if (fcs != null) {
-            if (!first) { c.drawText(sep, x, baseline, infoPaint); x += wSep; }
-            infoPaint.setAlpha(150);
-            c.drawText(fcs, x, baseline, infoPaint);
+        return w;
+    }
+
+    private void drawSegs(Canvas c, java.util.List<Seg> segs, float x, float baseline, float size) {
+        for (int i = 0; i < segs.size(); i++) {
+            Seg g = segs.get(i);
+            if (i > 0) {
+                infoPaint.setAlpha(150);
+                c.drawText(SEP, x, baseline, infoPaint);
+                x += infoPaint.measureText(SEP);
+            }
+            if (g.icon >= 0) {
+                float iconW = size * 1.3f;
+                iconPaint.setAlpha(200);
+                WeatherIcons.draw(c, iconPaint, g.icon, weather.isDay, x + iconW / 2f, baseline - size * 0.36f, iconW);
+                x += size * 1.75f;
+            }
+            g.paint.setAlpha(g.alpha);
+            c.drawText(g.text, x, baseline, g.paint);
+            x += g.paint.measureText(g.text);
         }
+    }
+
+    /** Geteilte Position: Wetter unten links, Uhrzeit und Datum unten rechts. */
+    private boolean split() {
+        return "bottom_split".equals(overlayPos);
     }
 
     /** Linker Startpunkt eines Elements der Breite w bei Ausrichtung h (-1 links, 0 mittig, 1 rechts). */

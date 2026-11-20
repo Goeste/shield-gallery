@@ -141,6 +141,7 @@
     </string-array>
 
     <string-array name="pos_labels">
+        <item>Unten: Wetter links, Uhr rechts</item>
         <item>Unten rechts</item>
         <item>Unten links</item>
         <item>Unten mittig</item>
@@ -149,6 +150,7 @@
         <item>Oben mittig</item>
     </string-array>
     <string-array name="pos_values">
+        <item>bottom_split</item>
         <item>bottom_right</item>
         <item>bottom_left</item>
         <item>bottom_center</item>

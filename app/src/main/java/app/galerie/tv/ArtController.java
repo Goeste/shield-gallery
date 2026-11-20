@@ -89,6 +89,10 @@ final class ArtController {
      * einmalig, damit die Auswahl in den Einstellungen gültig bleibt.
      */
     static void migratePrefs(SharedPreferences p) {
+        // Version 1.4: Standard-Position "Wetter unten links, Uhr unten rechts" einmalig übernehmen
+        if (!p.getBoolean("overlay_split_v1", false)) {
+            p.edit().putBoolean("overlay_split_v1", true).putString("overlay_pos", "bottom_split").apply();
+        }
         if (p.getBoolean("art_size_v2", false)) return;
         String old = p.getString("art_size", null);
         String neu = "55".equals(old) ? "62" : "68".equals(old) ? "76" : "80".equals(old) ? "84" : old;

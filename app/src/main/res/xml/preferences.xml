@@ -102,7 +102,7 @@
             app:dialogMessage="Stadt oder Ort, z. B. Hamburg" />
         <ListPreference
             app:key="overlay_pos"
-            app:defaultValue="bottom_right"
+            app:defaultValue="bottom_split"
             app:entries="@array/pos_labels"
             app:entryValues="@array/pos_values"
             app:iconSpaceReserved="false"

@@ -17,7 +17,7 @@ Papierstruktur, weiches Raumlicht, sanfte Überblendungen.
 
 ## Modi
 - **Art**: Bild im Rahmen-Stil mit Passepartout, Leinwand-Effekt; auf Wunsch mit Uhr und Wetter als dezente Zeile auf dem Passepartout
-- **Wetter**: Vollbild 16:9 mit Uhr, Datum und Wetter; Position wählbar (oben/unten × links/mittig/rechts)
+- **Wetter**: Vollbild 16:9 mit Uhr, Datum und Wetter; Position wählbar (oben/unten × links/mittig/rechts oder Wetter unten links + Uhr unten rechts)
 - **Galerie**: Diashow im Vollbild ohne Effekte
 
 ## Bedienung
