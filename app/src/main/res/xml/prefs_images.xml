@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Eigene Bilder" app:iconSpaceReserved="false">
+        <Preference
+            app:key="upload"
+            app:iconSpaceReserved="false"
+            app:title="Bilder vom Handy oder PC hinzufügen"
+            app:summary="Zeigt Adresse und QR-Code – Bilder im Browser hochladen" />
+        <SwitchPreferenceCompat
+            app:key="source_local"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Eigene Bilder anzeigen" />
+        <SwitchPreferenceCompat
+            app:key="source_usb"
+            app:dependency="source_local"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:title="Auch Ordner vom USB-Stick"
+            app:summary="Alle Bilder in einem Ordner mit dem unten eingestellten Namen" />
+        <EditTextPreference
+            app:key="local_folder"
+            app:dependency="source_usb"
+            app:defaultValue="Galerie"
+            app:iconSpaceReserved="false"
+            app:title="Ordnername auf dem USB-Stick"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Museumskunst" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="source_met"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Gemeinfreie Gemälde"
+            app:summary="Aus dem Metropolitan Museum of Art, New York" />
+        <MultiSelectListPreference
+            app:key="collections"
+            app:dependency="source_met"
+            app:defaultValue="@array/collection_defaults"
+            app:entries="@array/collection_labels"
+            app:entryValues="@array/collection_values"
+            app:iconSpaceReserved="false"
+            app:title="Sammlungen" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Bildformat" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="crop169"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Auf 16:9 zuschneiden"
+            app:summary="Bilder füllen den Fernseher. Museumsbilder im Hochformat werden übersprungen." />
+        <ListPreference
+            app:key="min_res"
+            app:defaultValue="1080"
+            app:entries="@array/minres_labels"
+            app:entryValues="@array/minres_values"
+            app:iconSpaceReserved="false"
+            app:title="Mindestauflösung"
+            app:useSimpleSummaryProvider="true" />
+        <Preference
+            app:key="clear_cache"
+            app:iconSpaceReserved="false"
+            app:title="Bild-Cache leeren"
+            app:summary="Geladene Museumsbilder löschen und neu herunterladen" />
+    </PreferenceCategory>
+</PreferenceScreen>

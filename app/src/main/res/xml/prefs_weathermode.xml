@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Wetter-Modus" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat
+            app:key="clock"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Uhrzeit und Datum"
+            app:summary="Groß in der Ecke" />
+        <SwitchPreferenceCompat
+            app:key="weather_on"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:title="Wetter"
+            app:summary="Ort und Vorschau unter „Uhr &amp; Wetter“" />
+    </PreferenceCategory>
+</PreferenceScreen>

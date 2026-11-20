@@ -120,12 +120,10 @@
     </string-array>
 
     <string-array name="weather_labels">
-        <item>Aus</item>
         <item>Aktuelles Wetter</item>
         <item>Aktuell + 3-Tage-Vorschau</item>
     </string-array>
     <string-array name="weather_values">
-        <item>off</item>
         <item>now</item>
         <item>forecast</item>
     </string-array>
@@ -138,6 +136,17 @@
         <item>art</item>
         <item>weather</item>
         <item>gallery</item>
+    </string-array>
+
+    <string-array name="shade_labels">
+        <item>Abdunklung und Schriftschatten</item>
+        <item>Nur Schriftschatten</item>
+        <item>Keine Schattierung</item>
+    </string-array>
+    <string-array name="shade_values">
+        <item>full</item>
+        <item>text</item>
+        <item>none</item>
     </string-array>
 
     <string-array name="pos_labels">

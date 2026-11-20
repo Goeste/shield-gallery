@@ -48,6 +48,9 @@ public class RenderPreviewTest {
         render("06_art_geteilt", "art+", "bottom_split", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
         render("07_art_uhr_wetter_oben_links_4k", "art+", "top_left", "forecast", true, an, anT, anA, anD, w, 3840, 2160);
         render("08_wetter_geteilt", "weather", "bottom_split", "forecast", true, vg, vgT, vgA, vgD, w, 1920, 1080);
+        render("09_galerie_uhr_wetter", "gallery+", "bottom_split", "now", true, an, anT, anA, anD, w, 1920, 1080);
+        render("10_art_nur_wetter", "art~", "bottom_split", "forecast", true, an, anT, anA, anD, w, 1920, 1080);
+        render("11_galerie_ohne_schattierung", "gallery+", "bottom_split", "now", false, an, anT, anA, anD, w, 1920, 1080);
         render("05_galerie", "gallery", "bottom_right", "now", true, vg, vgT, vgA, vgD, w, 1920, 1080);
     }
 
@@ -56,8 +59,11 @@ public class RenderPreviewTest {
         Context ctx = ApplicationProvider.getApplicationContext();
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
         boolean artOverlay = mode.endsWith("+");
-        mode = mode.replace("+", "");
-        p.edit().putBoolean("art_overlay", artOverlay).putString("mode", mode).putString("overlay_pos", pos).putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "76")
+        boolean weatherOnly = mode.endsWith("~");   // nur Wetter, ohne Uhr
+        mode = mode.replace("+", "").replace("~", "");
+        p.edit().putBoolean("art_clock", artOverlay).putBoolean("art_weather", artOverlay || weatherOnly)
+                .putBoolean("gallery_clock", artOverlay).putBoolean("gallery_weather", artOverlay)
+                .putBoolean("weather_on", true).putString("overlay_shade", name.contains("ohne_schattierung") ? "none" : "full").putBoolean("gallery_matte", true).putString("mode", mode).putString("overlay_pos", pos).putString("matte", "modern").putString("matte_color", "#F4F2EE").putString("art_size", "76")
                 .putBoolean("canvas", true).putString("brightness", "100").putBoolean("caption", caption)
                 .putBoolean("clock", true).putString("weather", weatherMode).commit();
 

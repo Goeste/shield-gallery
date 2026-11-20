@@ -78,8 +78,8 @@ final class ArtController {
     private void maybeStartWeather(SharedPreferences p) {
         if (weatherStarted) return;
         String mode = p.getString("mode", "art");
-        boolean overlay = "weather".equals(mode) || ("art".equals(mode) && p.getBoolean("art_overlay", false));
-        if (!overlay || "off".equals(p.getString("weather", "now"))) return;
+        String key = "art".equals(mode) ? "art_weather" : "gallery".equals(mode) ? "gallery_weather" : "weather_on";
+        if (!p.getBoolean(key, "weather_on".equals(key))) return;
         weatherStarted = true;
         main.post(weatherTick);
     }
@@ -89,6 +89,21 @@ final class ArtController {
      * einmalig, damit die Auswahl in den Einstellungen gültig bleibt.
      */
     static void migratePrefs(SharedPreferences p) {
+        // Version 1.5: Uhr/Datum und Wetter je Modus getrennt schaltbar (vorher ein Schalter "art_overlay"/"gallery_overlay"
+        // und eine Wetter-Auswahl mit "Aus")
+        if (!p.getBoolean("clock_weather_v1", false)) {
+            boolean clock = p.getBoolean("clock", true);
+            String w = p.getString("weather", "now");
+            boolean wOn = !"off".equals(w);
+            boolean art = p.getBoolean("art_overlay", false), gal = p.getBoolean("gallery_overlay", false);
+            SharedPreferences.Editor e = p.edit().putBoolean("clock_weather_v1", true)
+                    .putBoolean("weather_on", wOn)
+                    .putBoolean("art_clock", art && clock).putBoolean("art_weather", art && wOn)
+                    .putBoolean("gallery_clock", gal && clock).putBoolean("gallery_weather", gal && wOn)
+                    .remove("art_overlay").remove("gallery_overlay");
+            if (!wOn) e.putString("weather", "now");
+            e.apply();
+        }
         // Version 1.4: Standard-Position "Wetter unten links, Uhr unten rechts" einmalig übernehmen
         if (!p.getBoolean("overlay_split_v1", false)) {
             p.edit().putBoolean("overlay_split_v1", true).putString("overlay_pos", "bottom_split").apply();

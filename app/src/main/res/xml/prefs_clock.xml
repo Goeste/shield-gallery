@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Uhr &amp; Wetter – für alle Modi" app:iconSpaceReserved="false">
+        <ListPreference
+            app:key="weather"
+            app:defaultValue="now"
+            app:entries="@array/weather_labels"
+            app:entryValues="@array/weather_values"
+            app:iconSpaceReserved="false"
+            app:title="Wetter-Anzeige"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="weather_city"
+            app:defaultValue=""
+            app:iconSpaceReserved="false"
+            app:title="Ort für das Wetter"
+            app:dialogMessage="Stadt oder Ort, z. B. Hamburg" />
+        <ListPreference
+            app:key="overlay_pos"
+            app:defaultValue="bottom_split"
+            app:entries="@array/pos_labels"
+            app:entryValues="@array/pos_values"
+            app:iconSpaceReserved="false"
+            app:title="Position von Uhr und Wetter"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:key="overlay_shade"
+            app:defaultValue="full"
+            app:entries="@array/shade_labels"
+            app:entryValues="@array/shade_values"
+            app:iconSpaceReserved="false"
+            app:title="Schattierung hinter Uhr und Wetter"
+            app:useSimpleSummaryProvider="true" />
+        <Preference
+            app:key="clock_note"
+            app:selectable="false"
+            app:iconSpaceReserved="false"
+            app:summary="Ob Uhr und Wetter angezeigt werden, stellst du je Modus im Menü des Modus ein." />
+    </PreferenceCategory>
+</PreferenceScreen>

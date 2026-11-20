@@ -73,8 +73,12 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
     private boolean canvasEffect = true;
     private int brightness = 85;
     private boolean captionEnabled = true;
-    private boolean clockEnabled = true;
-    private boolean artOverlay = false;   // Uhr/Wetter auch im Art-Modus
+    // Uhr/Datum und Wetter je Modus getrennt schaltbar
+    private boolean weatherClock = true, weatherWeather = true;
+    private boolean artClock = false, artWeather = false;
+    private boolean galleryClock = false, galleryWeather = false;
+    private String overlayShade = "full";  // full = Abdunklung + Schriftschatten, text = nur Schriftschatten, none
+    private boolean galleryMatte = true;  // sehr schmales Passepartout am Bildschirmrand
     private String weatherMode = "now";
 
     private final Paint bmpPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
@@ -215,8 +219,14 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
             canvasEffect = p.getBoolean("canvas", true);
             brightness = parse(p.getString("brightness", "85"), 85);
             captionEnabled = p.getBoolean("caption", true);
-            clockEnabled = p.getBoolean("clock", true);
-            artOverlay = p.getBoolean("art_overlay", false);
+            weatherClock = p.getBoolean("clock", true);
+            weatherWeather = p.getBoolean("weather_on", true);
+            artClock = p.getBoolean("art_clock", false);
+            artWeather = p.getBoolean("art_weather", false);
+            galleryClock = p.getBoolean("gallery_clock", false);
+            galleryWeather = p.getBoolean("gallery_weather", false);
+            overlayShade = p.getString("overlay_shade", "full");
+            galleryMatte = p.getBoolean("gallery_matte", true);
             weatherMode = p.getString("weather", "now");
             if (cur != null) cur = new Scene(cur.bmp, cur.item, matteFor(cur.bmp), cur.dx, cur.dy);
         }
@@ -346,6 +356,27 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         fill.setStyle(Paint.Style.FILL);
         fill.setShader(null);
 
+        if (galleryMode() && galleryMatte) {
+            // Sehr schmales Passepartout entlang des Bildschirmrands: der Fernseher wirkt wie der Rahmen
+            float b = Math.round(H * 0.024f);
+            fill.setColor(s.matte);
+            c.drawRect(0, 0, W, H, fill);
+            c.drawRect(0, 0, W, H, texture);
+            RectF inner = new RectF(b, b, W - b, H - b);
+            float scale = Math.max(inner.width() / bw, inner.height() / bh);
+            float w = bw * scale, h = bh * scale;
+            art.set(inner.centerX() - w / 2f, inner.centerY() - h / 2f, inner.centerX() + w / 2f, inner.centerY() + h / 2f);
+            float bevel = Math.max(2f, H * 0.0035f);
+            drawBevel(c, inner, bevel, s.matte);
+            int sc = c.save();
+            c.clipRect(inner);
+            c.drawBitmap(s.bmp, null, art, ap);
+            c.restoreToCount(sc);
+            drawInnerShadow(c, inner, bevel * 1.6f);
+            art.set(inner);
+            return;
+        }
+
         if (fullBleed()) {
             float screenAr = W / (float) H, ar = bw / bh;
             boolean cover = Math.abs(Math.log(ar / screenAr)) < 0.35;
@@ -411,13 +442,27 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         return "art".equals(mode);
     }
 
+    private boolean galleryMode() {
+        return "gallery".equals(mode);
+    }
+
     private boolean fullBleed() {
         return !artMode();
     }
 
     private boolean overlayActive() {
-        boolean wanted = "weather".equals(mode) || (artMode() && artOverlay);
-        return wanted && (clockEnabled || (!"off".equals(weatherMode) && weather != null));
+        return showClock() || showWeather();
+    }
+
+    /** Uhrzeit/Datum im aktuellen Modus eingeschaltet? */
+    private boolean showClock() {
+        return artMode() ? artClock : galleryMode() ? galleryClock : "weather".equals(mode) && weatherClock;
+    }
+
+    /** Wetter im aktuellen Modus eingeschaltet und Daten vorhanden? */
+    private boolean showWeather() {
+        boolean on = artMode() ? artWeather : galleryMode() ? galleryWeather : "weather".equals(mode) && weatherWeather;
+        return on && weather != null;
     }
 
     /** Bildtitel: im Vollbild in einer Ecke (nie dort, wo Uhr/Wetter stehen), im Art-Modus mittig unter dem Bild. */
@@ -489,19 +534,18 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
      */
     private void drawOverlay(Canvas c, Scene s, int W, int H) {
         if (artMode()) {
-            if (artOverlay && s != null) drawArtOverlay(c, s, W, H);
+            if (s != null) drawArtOverlay(c, s, W, H);
             return;
         }
-        if (!"weather".equals(mode)) return;
-        boolean showWeather = !"off".equals(weatherMode) && weather != null;
-        if (!clockEnabled && !showWeather) return;
+        boolean clockOn = showClock(), showWeather = showWeather();
+        if (!clockOn && !showWeather) return;
         if (split()) {
             if (showWeather) drawOverlayBlock(c, W, H, false, -1, false, true);
-            if (clockEnabled) drawOverlayBlock(c, W, H, false, 1, true, false);
+            if (clockOn) drawOverlayBlock(c, W, H, false, 1, true, false);
             return;
         }
         drawOverlayBlock(c, W, H, overlayPos.startsWith("top"),
-                overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1, clockEnabled, showWeather);
+                overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1, clockOn, showWeather);
     }
 
     /** Ein Uhr/Wetter-Block im Wetter-Modus an Position top/h (-1 links, 0 mittig, 1 rechts). */
@@ -519,23 +563,26 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         float y = top ? margin : H - margin - blockH;          // Oberkante des Blocks
         float ax = h < 0 ? margin : h > 0 ? W - margin : W / 2f; // Ausrichtungskante
 
-        // Abdunklung hinter dem Block, damit Schrift auf hellen Bildern lesbar bleibt
+        // Abdunklung hinter dem Block, damit Schrift auf hellen Bildern lesbar bleibt (abschaltbar)
+        if ("full".equals(overlayShade)) {
         float gx = h < 0 ? 0 : h > 0 ? W : W / 2f, gy = top ? 0 : H;
         float r = H * (h == 0 ? 0.55f : 0.65f);
         grad.setShader(new RadialGradient(gx, gy, r,
                 new int[]{0x8C000000, 0x50000000, 0x00000000}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
         c.drawRect(Math.max(0, gx - r), Math.max(0, gy - r), Math.min(W, gx + r), Math.min(H, gy + r), grad);
         grad.setShader(null);
+        }
 
         int color = 0xFFF4F0E8;
         float sh = 5 * u;
+        boolean textShadow = !"none".equals(overlayShade);
         for (TextPaint p : new TextPaint[]{clockPaint, infoPaint}) {
             p.setColor(color);
             p.setTextAlign(Paint.Align.LEFT);
-            p.setShadowLayer(sh, 0, u, 0x80000000);
+            if (textShadow) p.setShadowLayer(sh, 0, u, 0x80000000); else p.clearShadowLayer();
         }
         iconPaint.setColor(color);
-        iconPaint.setShadowLayer(sh, 0, u, 0x80000000);
+        if (textShadow) iconPaint.setShadowLayer(sh, 0, u, 0x80000000); else iconPaint.clearShadowLayer();
 
         if (withClock) {
             Date now = new Date();
@@ -598,8 +645,8 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
      * links und Uhrzeit/Datum rechts. Farbe passend zum Passepartout, keine Abdunklung.
      */
     private void drawArtOverlay(Canvas c, Scene s, int W, int H) {
-        boolean showWeather = !"off".equals(weatherMode) && weather != null;
-        if (!clockEnabled && !showWeather) return;
+        boolean clockOn = showClock(), showWeather = showWeather();
+        if (!clockOn && !showWeather) return;
         boolean split = split();
         boolean top = overlayPos.startsWith("top");
         int h = split ? 0 : overlayPos.endsWith("left") ? -1 : overlayPos.endsWith("center") ? 0 : 1;
@@ -623,7 +670,7 @@ public class ArtFrameView extends SurfaceView implements SurfaceHolder.Callback 
         java.util.List<Seg> clock = new java.util.ArrayList<>();
         java.util.List<Seg> wx = new java.util.ArrayList<>();
         Seg fc = null;
-        if (clockEnabled) {
+        if (clockOn) {
             clock.add(new Seg(clockFmt.format(now), clockPaint, 235, -1));
             clock.add(new Seg(dateFmt.format(now), infoPaint, 190, -1));
         }
