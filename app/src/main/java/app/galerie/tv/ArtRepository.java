@@ -101,6 +101,8 @@ final class ArtRepository {
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
         boolean crop = p.getBoolean("crop169", true);
         int[] min = minSize(p);
+        // selbst gewählter Ausschnitt (nur hochgeladene Bilder; die liegen schon richtig gedreht vor)
+        final float[] custom = crop && item.file != null ? Crops.get(ctx, item.file.getName()) : null;
 
         File file = null;
         if (item.url != null) {
@@ -131,7 +133,12 @@ final class ArtRepository {
             try {
                 bmp = ImageDecoder.decodeBitmap(source(item, file), (dec, info, src) -> {
                     int iw = info.getSize().getWidth(), ih = info.getSize().getHeight();
-                    f[0] = decodeScale(iw, ih, maxW, maxH);
+                    if (custom != null) {
+                        int[] r = Crops.rect(iw, ih, custom);
+                        f[0] = Math.min(1f, Math.max(maxW / (float) r[2], maxH / (float) r[3]));
+                    } else {
+                        f[0] = decodeScale(iw, ih, maxW, maxH);
+                    }
                     if (f[0] < 1f) dec.setTargetSize(Math.max(1, Math.round(iw * f[0])), Math.max(1, Math.round(ih * f[0])));
                     dec.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
                 });
@@ -159,7 +166,8 @@ final class ArtRepository {
             h = o.outHeight;
             if (rotation % 180 != 0) { int t = w; w = h; h = t; }
             checkSize(item, crop, min, w, h);
-            int[] cs = crop ? cropSize(w, h) : new int[]{w, h};
+            int[] cs = !crop ? new int[]{w, h} : custom != null
+                    ? Arrays.copyOfRange(Crops.rect(w, h, custom), 2, 4) : cropSize(w, h);
 
             // Möglichst grob dekodieren, aber nie kleiner als der Bildschirm
             int sample = 1;
@@ -188,7 +196,7 @@ final class ArtRepository {
         if (item.url != null) bmp = BorderTrim.trim(bmp);
 
         if (crop) {
-            bmp = crop169(bmp);
+            bmp = crop169(bmp, custom);
             if (bmp.getWidth() * origPerPx < min[0] * 0.97f || bmp.getHeight() * origPerPx < min[1] * 0.97f) {
                 bmp.recycle();
                 throw new RejectedException("Nach Zuschnitt zu klein");
@@ -239,11 +247,14 @@ final class ArtRepository {
 
     /** Mittiger 16:9-Ausschnitt; bei Hochformat etwas nach oben versetzt (Gesichter, Horizont). */
     static Bitmap crop169(Bitmap src) {
-        int[] cs = cropSize(src.getWidth(), src.getHeight());
-        if (Math.abs(cs[0] - src.getWidth()) <= 1 && Math.abs(cs[1] - src.getHeight()) <= 1) return src;
-        int x = (src.getWidth() - cs[0]) / 2;
-        int y = Math.round((src.getHeight() - cs[1]) * (src.getHeight() > src.getWidth() ? 0.35f : 0.5f));
-        Bitmap out = Bitmap.createBitmap(src, x, y, cs[0], cs[1]);
+        return crop169(src, null);
+    }
+
+    /** 16:9-Ausschnitt: selbst gewählt (c = {x, y, w} als Bruchteile) oder automatisch (c = null). */
+    static Bitmap crop169(Bitmap src, float[] c) {
+        int[] r = Crops.rect(src.getWidth(), src.getHeight(), c);
+        if (r[0] == 0 && r[1] == 0 && Math.abs(r[2] - src.getWidth()) <= 1 && Math.abs(r[3] - src.getHeight()) <= 1) return src;
+        Bitmap out = Bitmap.createBitmap(src, r[0], r[1], r[2], r[3]);
         if (out != src) src.recycle();
         return out;
     }

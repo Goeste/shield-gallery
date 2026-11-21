@@ -36,7 +36,32 @@
   .bad { color:var(--warn); }
   .del { background:none; border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; cursor:pointer; min-height:32px; }
   .del:hover { border-color:var(--warn); color:var(--warn); }
-  @media (max-width:600px) { .meta { align-items:stretch; } .del { width:100%; min-height:38px; } }
+  @media (max-width:600px) { .meta { align-items:stretch; } .acts { flex-wrap:nowrap; } .acts > .del { flex:1; min-width:0; padding:6px 4px; min-height:38px; } }
+  /* Ausschnitt-Editor */
+  .modal { position:fixed; inset:0; z-index:10; background:#0c0b0a; display:flex; flex-direction:column;
+           padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+           overscroll-behavior:contain; }
+  .modal[hidden] { display:none; }
+  .modal h2 { font-family:Georgia,serif; font-style:italic; font-weight:400; font-size:22px; margin:0 0 2px; }
+  .modal .hint { color:var(--muted); font-size:14px; margin:0 0 10px; }
+  .stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
+  .pic { position:relative; max-width:100%; max-height:100%; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .pic img { display:block; max-width:100%; max-height:100%; width:auto; height:auto; pointer-events:none; -webkit-user-drag:none; }
+  .frame { position:absolute; border:2px solid #fff; box-shadow:0 0 0 9999px rgba(0,0,0,.6); cursor:move; touch-action:none; }
+  .frame::before, .frame::after { content:""; position:absolute; inset:0; pointer-events:none;
+           background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% + .5px),transparent calc(66.66% + .5px)); }
+  .frame::after { background:linear-gradient(180deg,transparent calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% - .5px),rgba(255,255,255,.35) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% - .5px),rgba(255,255,255,.35) calc(66.66% + .5px),transparent calc(66.66% + .5px)); }
+  .tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:12px; }
+  .zoom { display:flex; align-items:center; gap:10px; flex:1 1 220px; color:var(--muted); font-size:14px; }
+  .zoom input { flex:1; accent-color:var(--accent); min-height:32px; }
+  .info { color:var(--muted); font-size:13px; flex:1 1 100%; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; }
+  .btns button { border-radius:999px; padding:10px 18px; font:inherit; font-size:15px; min-height:44px; cursor:pointer;
+                 background:none; border:1px solid var(--line); color:var(--ink); }
+  .btns button.primary { background:var(--accent); border-color:var(--accent); color:#1e1c1a; font-weight:600; }
+  @media (max-width:600px) { .btns { width:100%; margin-left:0; } .btns button { flex:1; padding:10px 8px; } }
+  .acts { display:flex; gap:6px; flex-wrap:wrap; }
+  .tag { color:var(--accent); }
   .empty { grid-column:1/-1; color:var(--muted); padding:20px 2px; }
 </style>
 </head>
@@ -55,6 +80,23 @@
 
   <div class="grid" id="grid"></div>
 </main>
+
+<div class="modal" id="ed" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <h2 id="edTitle">Ausschnitt wählen</h2>
+  <p class="hint">Rahmen verschieben, mit dem Regler vergrößern. So erscheint das Bild auf dem Fernseher.</p>
+  <div class="stage" id="stage">
+    <div class="pic" id="pic"><img id="edImg" alt=""><div class="frame" id="frame"></div></div>
+  </div>
+  <div class="tools">
+    <label class="zoom">Zoom <input type="range" id="zoom" min="1" max="1" step="0.01" value="1"></label>
+    <div class="btns">
+      <button id="edReset" type="button">Automatisch</button>
+      <button id="edCancel" type="button">Abbrechen</button>
+      <button id="edSave" type="button" class="primary">Speichern</button>
+    </div>
+    <div class="info" id="edInfo"></div>
+  </div>
+</div>
 <script>
 const grid = document.getElementById('grid'), status = document.getElementById('status');
 const drop = document.getElementById('drop'), input = document.getElementById('file');
@@ -68,11 +110,14 @@ async function refresh(){
   for (const it of list){
     const d = document.createElement('div');
     d.className = 'item' + (it.crop ? '' : ' free');
-    const res = it.crop ? `16:9-Ausschnitt ${fmt(it.cw)}×${fmt(it.ch)}` : `${fmt(it.w)}×${fmt(it.h)}`;
-    d.innerHTML = `<img loading="lazy" src="/api/thumb?name=${encodeURIComponent(it.name)}">
-      <div class="meta"><span class="${it.ok?'res':'bad'}">${it.ok?res:('Zu klein – mind. '+it.min)}</span>
-      <button class="del">Löschen</button></div>`;
-    d.querySelector('.del').onclick = async () => {
+    const res = it.crop ? `${it.custom?'Eigener Ausschnitt':'16:9-Ausschnitt'} ${fmt(it.cw)}×${fmt(it.ch)}` : `${fmt(it.w)}×${fmt(it.h)}`;
+    const v = it.custom ? `${it.cx.toFixed(4)}_${it.cy.toFixed(4)}_${it.cwf.toFixed(4)}` : 'auto';
+    d.innerHTML = `<img loading="lazy" alt="" src="/api/thumb?name=${encodeURIComponent(it.name)}&v=${v}">
+      <div class="meta"><span class="${it.ok?(it.custom?'tag':'res'):'bad'}">${it.ok?res:('Zu klein – mind. '+it.min)}</span>
+      <div class="acts">${it.crop?'<button class="del edit">Ausschnitt</button>':''}<button class="del rm">Löschen</button></div></div>`;
+    const ed = d.querySelector('.edit');
+    if (ed) ed.onclick = () => openEditor(it);
+    d.querySelector('.rm').onclick = async () => {
       if (!confirm('Bild löschen?')) return;
       await fetch('/api/delete?name=' + encodeURIComponent(it.name), {method:'POST'});
       refresh();
@@ -80,6 +125,92 @@ async function refresh(){
     grid.appendChild(d);
   }
 }
+
+// ---- Ausschnitt-Editor ----
+const RATIO = 16/9;
+const E = { m:document.getElementById('ed'), pic:document.getElementById('pic'), img:document.getElementById('edImg'),
+            frame:document.getElementById('frame'), zoom:document.getElementById('zoom'), info:document.getElementById('edInfo') };
+let cur = null; // {it, x, y, w} – Bruchteile des Bildes
+
+function maxW(it){ return Math.min(1, it.h * RATIO / it.w); }          // größter 16:9-Ausschnitt, Breite als Bruchteil
+function clampCur(){
+  const mw = maxW(cur.it);
+  cur.w = Math.min(mw, Math.max(mw / Number(E.zoom.max), cur.w));
+  const hf = cur.w * cur.it.w / RATIO / cur.it.h;
+  cur.x = Math.min(1 - cur.w, Math.max(0, cur.x));
+  cur.y = Math.min(1 - hf, Math.max(0, cur.y));
+}
+function drawFrame(){
+  clampCur();
+  const it = cur.it, hf = cur.w * it.w / RATIO / it.h;
+  Object.assign(E.frame.style, { left:cur.x*100+'%', top:cur.y*100+'%', width:cur.w*100+'%', height:hf*100+'%' });
+  const pw = Math.round(cur.w * it.w), ph = Math.round(pw / RATIO);
+  const small = it.minW > 0 && (pw < it.minW * 0.97 || ph < it.minH * 0.97);
+  E.info.innerHTML = `Ausschnitt ${fmt(pw)}×${fmt(ph)} Pixel` + (small ? ` · <span class="bad">kleiner als die Mindestauflösung ${it.min} – wird auf dem Fernseher übersprungen</span>` : '');
+}
+function fitPic(){
+  // Bild so groß wie möglich in die Bühne einpassen (das Rahmen-Overlay nutzt Prozent, passt sich also an)
+  const st = document.getElementById('stage').getBoundingClientRect();
+  const f = Math.min(st.width / cur.it.w, st.height / cur.it.h);
+  E.pic.style.width = Math.floor(cur.it.w * f) + 'px';
+  E.img.style.width = '100%'; E.img.style.height = 'auto';
+}
+function openEditor(it){
+  cur = { it, x:it.cx, y:it.cy, w:it.cwf };
+  // höchster Zoom: Ausschnitt darf nicht unter die Mindestauflösung fallen (und höchstens 4-fach)
+  const mwPx = maxW(it) * it.w;
+  const lim = it.minW > 0 ? mwPx / it.minW : 4;
+  E.zoom.max = Math.max(1, Math.min(4, lim)).toFixed(2);
+  E.zoom.disabled = Number(E.zoom.max) <= 1.001;
+  E.zoom.value = Math.min(Number(E.zoom.max), maxW(it) / cur.w).toFixed(2);
+  E.img.src = '/api/thumb?full=1&name=' + encodeURIComponent(it.name);
+  E.m.hidden = false; document.body.style.overflow = 'hidden';
+  fitPic(); drawFrame();
+}
+function closeEditor(){ E.m.hidden = true; document.body.style.overflow = ''; E.img.removeAttribute('src'); cur = null; }
+
+E.zoom.oninput = () => {
+  const cx = cur.x + cur.w/2, cy = cur.y + cur.w * cur.it.w / RATIO / cur.it.h / 2;
+  cur.w = maxW(cur.it) / Number(E.zoom.value);
+  const hf = cur.w * cur.it.w / RATIO / cur.it.h;
+  cur.x = cx - cur.w/2; cur.y = cy - hf/2;
+  drawFrame();
+};
+let drag = null;
+E.frame.addEventListener('pointerdown', ev => {
+  ev.preventDefault(); E.frame.setPointerCapture(ev.pointerId);
+  const r = E.pic.getBoundingClientRect();
+  drag = { id:ev.pointerId, sx:ev.clientX, sy:ev.clientY, x:cur.x, y:cur.y, rw:r.width, rh:r.height };
+});
+E.frame.addEventListener('pointermove', ev => {
+  if (!drag || ev.pointerId !== drag.id) return;
+  cur.x = drag.x + (ev.clientX - drag.sx) / drag.rw;
+  cur.y = drag.y + (ev.clientY - drag.sy) / drag.rh;
+  drawFrame();
+});
+['pointerup','pointercancel'].forEach(t => E.frame.addEventListener(t, () => drag = null));
+// Tippen/Klicken neben den Rahmen: Rahmen dorthin zentrieren
+E.pic.addEventListener('pointerdown', ev => {
+  if (ev.target === E.frame) return;
+  const r = E.pic.getBoundingClientRect(), hf = cur.w * cur.it.w / RATIO / cur.it.h;
+  cur.x = (ev.clientX - r.left) / r.width - cur.w/2; cur.y = (ev.clientY - r.top) / r.height - hf/2;
+  drawFrame();
+});
+addEventListener('resize', () => { if (cur) fitPic(); });
+document.addEventListener('keydown', ev => { if (cur && ev.key === 'Escape') closeEditor(); });
+document.getElementById('edCancel').onclick = closeEditor;
+async function sendCrop(q){
+  const name = cur.it.name;
+  try {
+    const r = await fetch('/api/crop?name=' + encodeURIComponent(name) + '&' + q, {method:'POST'});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Fehler');
+    status.textContent = 'Ausschnitt gespeichert. Gilt beim nächsten Erscheinen auf dem Fernseher.';
+  } catch (e) { status.textContent = 'Ausschnitt nicht gespeichert: ' + e.message; }
+  closeEditor(); refresh();
+}
+document.getElementById('edSave').onclick = () => { clampCur(); sendCrop(`x=${cur.x.toFixed(5)}&y=${cur.y.toFixed(5)}&w=${cur.w.toFixed(5)}`); };
+document.getElementById('edReset').onclick = () => sendCrop('reset=1');
 
 const isHeic = f => /\.(heic|heif)$/i.test(f.name) || /image\/hei[cf]/i.test(f.type);
 const jpgName = n => n.replace(/\.[^.]+$/, '') + '.jpg';

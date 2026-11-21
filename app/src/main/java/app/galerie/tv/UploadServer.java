@@ -56,11 +56,15 @@ final class UploadServer extends NanoHTTPD {
                 return r;
             }
             if ("/api/list".equals(uri)) return json(list());
-            if ("/api/thumb".equals(uri)) return thumb(param(s, "name"));
+            if ("/api/thumb".equals(uri)) return thumb(param(s, "name"), "1".equals(param(s, "full")));
+            if ("/api/crop".equals(uri) && Method.POST.equals(s.getMethod())) return crop(s);
             if ("/api/upload".equals(uri) && Method.POST.equals(s.getMethod())) return upload(s);
             if ("/api/delete".equals(uri) && Method.POST.equals(s.getMethod())) {
                 File f = safeFile(param(s, "name"));
-                if (f != null && f.delete()) touchDir();
+                if (f != null && f.delete()) {
+                    Crops.remove(ctx, f.getName());
+                    touchDir();
+                }
                 return json(new JSONObject().put("ok", true));
             }
             return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Nicht gefunden");
@@ -146,36 +150,78 @@ final class UploadServer extends NanoHTTPD {
         BitmapFactory.decodeFile(f.getPath(), o);
         SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
         boolean crop = p.getBoolean("crop169", true);
-        int[] cs = crop ? ArtRepository.cropSize(o.outWidth, o.outHeight) : new int[]{o.outWidth, o.outHeight};
+        float[] custom = Crops.get(ctx, f.getName());
+        int[] r = Crops.rect(o.outWidth, o.outHeight, custom);
+        int[] cs = crop ? new int[]{r[2], r[3]} : new int[]{o.outWidth, o.outHeight};
         int[] min = ArtRepository.minSize(p);
         boolean ok = cs[0] >= min[0] * 0.97f && cs[1] >= min[1] * 0.97f;
-        return new JSONObject()
+        JSONObject j = new JSONObject()
                 .put("name", f.getName())
                 .put("w", o.outWidth).put("h", o.outHeight)
                 .put("cw", cs[0]).put("ch", cs[1])
                 .put("ok", ok)
                 .put("min", min[0] > 0 ? min[0] + "×" + min[1] : "")
+                .put("minW", min[0]).put("minH", min[1])
                 .put("crop", crop)
+                .put("custom", custom != null)
                 .put("size", f.length());
+        // aktueller Ausschnitt als Bruchteile – Startwert für den Editor
+        if (o.outWidth > 0 && o.outHeight > 0)
+            j.put("cx", r[0] / (double) o.outWidth).put("cy", r[1] / (double) o.outHeight)
+                    .put("cwf", r[2] / (double) o.outWidth);
+        return j;
     }
 
-    private Response thumb(String name) throws Exception {
+    /** Eigenen 16:9-Ausschnitt speichern (x, y, w als Bruchteile) oder mit reset=1 auf automatisch zurücksetzen. */
+    private Response crop(IHTTPSession s) throws Exception {
+        Map<String, String> body = new HashMap<>();
+        s.parseBody(body);
+        File f = safeFile(param(s, "name"));
+        if (f == null || !f.isFile()) return error("Bild nicht gefunden");
+        if ("1".equals(param(s, "reset"))) {
+            Crops.remove(ctx, f.getName());
+        } else {
+            float x, y, w;
+            try {
+                x = Float.parseFloat(param(s, "x"));
+                y = Float.parseFloat(param(s, "y"));
+                w = Float.parseFloat(param(s, "w"));
+            } catch (Exception e) {
+                return error("Ungültiger Ausschnitt");
+            }
+            if (!(w > 0.02f && w <= 1.0001f) || !(x >= -0.0001f && x < 1f) || !(y >= -0.0001f && y < 1f))
+                return error("Ungültiger Ausschnitt");
+            Crops.set(ctx, f.getName(), Math.max(0f, x), Math.max(0f, y), Math.min(1f, w));
+        }
+        return json(describe(f));
+    }
+
+    /** Vorschau: so wie auf dem Fernseher (mit Ausschnitt), oder mit full=1 das ganze Bild für den Editor. */
+    private Response thumb(String name, boolean full) throws Exception {
         File f = safeFile(name);
         if (f == null || !f.exists()) return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "");
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(f.getPath(), o);
+        boolean crop = !full && PreferenceManager.getDefaultSharedPreferences(ctx).getBoolean("crop169", true);
+        float[] custom = crop ? Crops.get(ctx, f.getName()) : null;
+        // Breite des sichtbaren Teils (ganzes Bild oder Ausschnitt) soll nach dem Verkleinern noch ≥ target sein
+        int target = full ? 1400 : 640;
+        int visible = crop ? Crops.rect(o.outWidth, o.outHeight, custom)[2] : Math.max(o.outWidth, o.outHeight);
         int sample = 1;
-        while (o.outWidth / (sample * 2) >= 640) sample *= 2;
+        while (visible / (sample * 2) >= target) sample *= 2;
         BitmapFactory.Options d = new BitmapFactory.Options();
         d.inSampleSize = sample;
         Bitmap b = BitmapFactory.decodeFile(f.getPath(), d);
         if (b == null) return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "");
+        if (crop) b = ArtRepository.crop169(b, custom);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        b.compress(Bitmap.CompressFormat.JPEG, 80, bo);
+        b.compress(Bitmap.CompressFormat.JPEG, full ? 85 : 80, bo);
         b.recycle();
         byte[] bytes = bo.toByteArray();
-        return newFixedLengthResponse(Response.Status.OK, "image/jpeg", new ByteArrayInputStream(bytes), bytes.length);
+        Response r = newFixedLengthResponse(Response.Status.OK, "image/jpeg", new ByteArrayInputStream(bytes), bytes.length);
+        r.addHeader("Cache-Control", "no-cache");
+        return r;
     }
 
     private static int exifRotation(String path) {
